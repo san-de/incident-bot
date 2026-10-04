@@ -35,7 +35,47 @@
     {
       "id": "epic_key",
       "type": "code",
-      "code": "const p = trigger.body.payload; if (p.epic_key) return { key: p.epic_key, how: 'given' }; const want = (p.epic && p.epic.epic_name || '').trim().toLowerCase(); const hit = (steps.find_epic.output.issues || []).find(i => (i.fields.summary || '').trim().toLowerCase() === want); if (hit) return { key: hit.key, how: 'by-name' }; if (p.epic && p.epic.on_missing === 'create-without-epic') return { key: null, how: 'missing-allowed' }; throw new Error('epic not found: ' + (p.epic && p.epic.epic_name) + ' in ' + p.project_key + ' — create the quarter epic, then retry');"
+      "code": "const p = trigger.body.payload; if (p.epic_key) return { key: p.epic_key, how: 'given' }; const want = (p.epic && p.epic.epic_name || '').trim().toLowerCase(); const hit = (steps.find_epic.output.issues || []).find(i => (i.fields.summary || '').trim().toLowerCase() === want); if (hit) return { key: hit.key, how: 'by-name' }; const om = p.epic && p.epic.on_missing; if (om === 'create-epic' && p.epic.epic_create) return { key: null, how: 'create' }; if (om === 'create-without-epic') return { key: null, how: 'missing-allowed' }; throw new Error('epic not found: ' + (p.epic && p.epic.epic_name) + ' in ' + p.project_key + ' — create the quarter epic, then retry');"
+    },
+    {
+      "id": "epic_create_if_missing",
+      "type": "branch",
+      "condition": "{{steps.epic_key.output.how}} == 'create'",
+      "then": [
+        {
+          "id": "recheck_epic",
+          "type": "action",
+          "action": "jira.search",
+          "inputs": { "jql": "{{trigger.body.payload.epic.epic_jql}}", "maxResults": 1, "fields": "key,summary" },
+          "_note": "Second look right before creating, so two triage runs in the same minute do not both create the quarter epic."
+        },
+        {
+          "id": "create_epic",
+          "type": "http",
+          "method": "POST",
+          "url": "https://<site>.atlassian.net/rest/api/3/issue",
+          "auth": { "type": "basic", "secret": "jira-incident-bot" },
+          "headers": { "Content-Type": "application/json" },
+          "body_json": {
+            "fields": {
+              "project": { "key": "{{trigger.body.payload.epic.epic_create.project_key}}" },
+              "issuetype": { "name": "Epic" },
+              "summary": "{{trigger.body.payload.epic.epic_create.summary}}",
+              "labels": "{{trigger.body.payload.epic.epic_create.labels}}",
+              "description": { "type": "doc", "version": 1, "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "{{trigger.body.payload.epic.epic_create.description_text}}\n\nidempotency: {{trigger.body.payload.epic.epic_create.idempotency_key}}" } ] } ] }
+            }
+          },
+          "skip_if": "{{steps.recheck_epic.output.total}} > 0",
+          "fail_on_error": true
+        },
+        { "id": "epic_created", "type": "code", "code": "const again = (steps.recheck_epic.output.issues || [])[0]; if (again) return { key: again.key, how: 'by-name-recheck' }; return { key: steps.create_epic.output.body.key, how: 'created' };" }
+      ],
+      "else": [ { "id": "epic_kept", "type": "code", "code": "return steps.epic_key.output;" } ]
+    },
+    {
+      "id": "epic_final",
+      "type": "code",
+      "code": "return steps.epic_created ? steps.epic_created.output : steps.epic_kept.output;"
     },
     {
       "id": "already",
@@ -56,8 +96,8 @@
               "issuetype": { "name": "{{trigger.body.payload.issue_type}}" },
               "summary": "{{trigger.body.payload.summary}}",
               "labels": "{{trigger.body.payload.labels}}",
-              "parent": { "key": "{{steps.epic_key.output.key}}" },
-              "_note": "Jira Cloud links an issue to its epic through the parent field. Omit parent when steps.epic_key.output.key is null (missing-allowed).",
+              "parent": { "key": "{{steps.epic_final.output.key}}" },
+              "_note": "Jira Cloud links an issue to its epic through the parent field. Omit parent when steps.epic_final.output.key is null (missing-allowed).",
               "description": {
                 "type": "doc", "version": 1,
                 "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "{{trigger.body.payload.description_text}}\n\nidempotency: {{trigger.body.payload.idempotency_key}}" } ] } ]
@@ -66,7 +106,7 @@
           },
           "fail_on_error": true
         },
-        { "id": "return_created", "type": "code", "code": "return { created: true, key: steps.create.output.body.key, epic: steps.epic_key.output.key, url: 'https://<site>.atlassian.net/browse/' + steps.create.output.body.key };" }
+        { "id": "return_created", "type": "code", "code": "return { created: true, key: steps.create.output.body.key, epic: steps.epic_final.output.key, epic_how: steps.epic_final.output.how, url: 'https://<site>.atlassian.net/browse/' + steps.create.output.body.key };" }
       ]
     }
   ],

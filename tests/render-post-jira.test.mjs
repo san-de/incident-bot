@@ -94,6 +94,19 @@ test("jira: rule table, dedupe JQL, payload with labels and idempotency key", as
   assert.throws(() => buildPayload(cfg, Object.assign({}, report, { classification: "unknown" }), ctx), /undecided/);
 });
 
+test("jira: create-epic rule produces the epic payload for an unpinned quarter and never for a pinned one", async () => {
+  const { epicRule } = await import("../scripts/jira.mjs");
+  const c = JSON.parse(JSON.stringify(cfg)); c.jira.epic.onMissing = "create-epic";
+  const r = epicRule(c, "Bug", "2027-02-10T08:00:00Z");
+  assert.equal(r.on_missing, "create-epic");
+  assert.deepEqual(r.epic_create, { project_key: "FIX", issue_type: "Epic", summary: "BUG Q1 2027",
+    description_text: r.epic_create.description_text, labels: ["auto-triage", "incident-bot-epic"], idempotency_key: "incident-bot:fixture:epic:Q1-2027" });
+  assert.match(r.epic_create.description_text, /Quarterly epic for Q1 2027, created by incident-bot/);
+  assert.equal(epicRule(c, "Bug", "2026-11-01T08:00:00Z").epic_create, undefined, "pinned quarter: nothing to create");
+  const s = JSON.parse(JSON.stringify(cfg)); s.jira.epic.onMissing = "skip";
+  assert.equal(epicRule(s, "Bug", "2027-02-10T08:00:00Z").epic_create, null);
+});
+
 test("jira: a pinned quarter wins over the name search; local dedupe finds tickets already filed", async () => {
   const { epicRule, localDuplicates } = await import("../scripts/jira.mjs");
   const pinned = epicRule(cfg, "Bug", "2026-11-20T08:00:00Z");

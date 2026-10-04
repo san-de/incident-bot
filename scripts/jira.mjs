@@ -71,12 +71,24 @@ export function epicRule(cfg, type, atIso) {
   // A pinned key for this quarter wins over the name search (jira.epic.pins: { "Q4 2026": "REMEX-3028" }).
   const pinned = (e.pins || {})[label] || null;
   if (pinned) return { mode: "pinned", quarter: label, epic_key: pinned, epic_name: name, epic_jql: null, on_missing: null, note: `epic pinned for ${label}; no search needed` };
+  const onMissing = e.onMissing || "skip";
+  const notes = {
+    "skip": "no match → do not create the ticket; report that the epic is missing",
+    "create-without-epic": "no match → create the ticket without an epic and record the gap",
+    "create-epic": "no match → create the epic from epic_create (search once more first), then file the ticket under it",
+  };
   return {
     quarter: label,
     mode: "by-name", epic_key: null, epic_name: name,
     epic_jql: `project = ${j.project} AND issuetype = Epic AND summary ~ "\\"${name.replace(/"/g, "")}\\"" ORDER BY created DESC`,
-    on_missing: e.onMissing || "skip",
-    note: `resolve the epic key by running epic_jql; exact summary match wins; ${e.onMissing === "create-without-epic" ? "no match → create the ticket without an epic and record the gap" : "no match → do not create; report that the epic is missing"}`,
+    on_missing: onMissing,
+    epic_create: onMissing === "create-epic" ? {
+      project_key: j.project, issue_type: "Epic", summary: name,
+      description_text: `Quarterly epic for ${label}, created by incident-bot (team ${cfg.team}) because no epic named "${name}" existed when the first ticket of the quarter was filed. Tickets from alert triage in ${label} are filed under this epic.`,
+      labels: [...new Set([...(j.labels || []), "incident-bot-epic"])].filter(l => /^[^\s]+$/.test(l)),
+      idempotency_key: `incident-bot:${cfg.team}:epic:${label.replace(" ", "-")}`,
+    } : null,
+    note: `resolve the epic key by running epic_jql; exact summary match wins; ${notes[onMissing]}`,
   };
 }
 
