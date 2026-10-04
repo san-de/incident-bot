@@ -29,7 +29,8 @@ agent1.prod.apps.auto1.team with `fetch('/api/…', {credentials:'include'})`.
 | Workflows `triage-one`, `jira-ticket` | `bootstrap.sh workflows` | step 2 never auto-starts (human gate) |
 | Task `incident-bot · poll · <team>` | `bootstrap.sh poll` | hourly, project = this repo at a tag, notify on |
 | Task `incident-bot · watchdog · <team>` | `bootstrap.sh watchdog` | daily, human-owned (needs agent1-mcp), posts only when unhealthy |
-| Automation `incident-bot · jira-create` | UI, from `agent1/automations/jira-create.json` | only when `jira.createVia: webhook` |
+| Jira writes | Agent1 system Atlassian MCP (`create_jira_issue`, `search_jira_issues`, `add_jira_comment`), owner's Atlassian OAuth link | remex: `jira.enabled: true`, `createVia: mcp` since 2026-10-04 (v1.2.0). Nothing is written during a dry run. |
+| Automation `incident-bot · jira-create` | UI, from `agent1/automations/jira-create.json` | only when `jira.createVia: webhook` (fallback path, not used by remex) |
 
 ## See what the bot did
 
