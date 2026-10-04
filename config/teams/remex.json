@@ -80,7 +80,7 @@
   },
   "knownNoise": [],
   "jira": {
-    "enabled": false,
+    "enabled": true,
     "siteUrl": "https://wkdauto.atlassian.net",
     "project": "REMEX",
     "epic": {
@@ -101,8 +101,7 @@
       "tech-improvement": "Task"
     },
     "labels": [
-      "agent-one",
-      "rota-triage"
+      "incident-bot"
     ],
     "createFor": [
       "new after deploy",
@@ -114,6 +113,8 @@
       "id": "7c0842d9-8a01-4e69-a046-70d46a43a2a2",
       "syncRule": "REMEX agent-one"
     },
-    "createVia": "none"
+    "createVia": "mcp",
+    "_comment": "Jira writes go through the Agent1 system Atlassian MCP (Jira read/write via the task owner’s Atlassian OAuth link in Integrations). createVia mcp: the skill calls the create-issue tool with the payload from jira.mjs payload. During a dry-run poll nothing is created; the payload is printed and the entry marked dry-run.",
+    "_labelsNote": "agent-one is deliberately NOT a default label: the REMEX board sync rule turns every agent-one ticket into an Agent1 dev task. Add it back here if each triage ticket should also start a dev task."
   }
 }

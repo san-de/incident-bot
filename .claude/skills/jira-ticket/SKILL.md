@@ -23,9 +23,15 @@ Mode: **interactive** when a person is in the session; **unattended** inside `in
    - `create-without-epic`: create the ticket and record the gap.
    Never guess an epic key and never fall back to last quarter's epic.
 6. **Create.** `node ${REPO}/scripts/jira.mjs payload … [--labels …] [--type …] [--epic-key <KEY>]` → payload.json, then `node ${REPO}/scripts/jira.mjs create --team <team> --payload payload.json`.
+   `createVia: mcp` (remex) → the script prints `mcp_call` (and `epic_call` when the quarter epic must be created first). Use the Agent1 Atlassian MCP tools, resolved by name suffix:
+   - `search_jira_issues(jql)` for every search in steps 3b and 5b; `get_visible_jira_projects` to validate the project in step 2.
+   - `create_jira_issue(projectKey, issueType, summary, description, labels, additionalFields)` with exactly `mcp_call.args` (description is Markdown; the tool converts it). Run `epic_call` first when present and put its key into `additionalFields.parent.key`.
+   - If the create is refused because of the parent field, call `get_jira_issue_type_fields(projectKey, issueType)` once, find the Epic Link field id, retry with `additionalFields: {"customfield_<id>": "<EPIC>"}`, and append `{"jiraEpicLinkField": "customfield_<id>"}` to the team overlay file so the next run skips the discovery. If it is refused because of a required custom field, read the field list the same way, fill the field only when its value is obvious from config or the report, otherwise stop with gap `Jira create needs field <name>`; never invent values.
+   - `add_jira_comment(issueKey, comment)` for the duplicate case in step 3.
+   If none of these tools exist in the session (the owner's Atlassian link is missing or expired), do not create: gap `Atlassian MCP unavailable; ticket not created`, and say so in the thread reply.
    `createVia: webhook` → the script posts to the Agent1 automation; its response carries the key.
-   `createVia: mcp` → the script prints the payload; call the Atlassian create-issue tool with `project_key`, `issue_type`, `summary`, `labels`, and `description_text`.
    `createVia: none` → report the payload and stop.
+   **Dry run** (`--dry-run` or `output.dryRun`): never call a write tool. Print `mcp_call`, mark the ledger entry `dry-run`, and continue.
 7. **Report.** Append `Filed <KEY>: <url>` to the alert thread (through `post.mjs check` first), `post.mjs mark --ts <cand ts> --status posted --ticket <KEY>`, write ticket.json. In an Agent1 workflow end with `complete_step_and_advance` naming the key.
 
 Jira writes on Agent1: the system Atlassian MCP is read-only and automations have no create action yet. Until one exists, `webhook` points at a team automation whose HTTP step calls the Jira REST API with a token kept in that automation's Secrets panel.

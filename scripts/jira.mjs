@@ -141,6 +141,31 @@ export function buildPayload(cfg, report, ctx, opts = {}) {
   return payload;
 }
 
+/** Arguments for the Agent1 Atlassian MCP `create_jira_issue` tool. Description is Markdown (the tool converts to ADF). */
+export function mcpCreateCall(payload) {
+  const additional = {};
+  if (payload.epic_key) additional.parent = { key: payload.epic_key };   // Jira Cloud epic link; if the project uses the legacy Epic Link field, the skill swaps this for {"customfield_…": key} after get_jira_issue_type_fields
+  return {
+    tool: "create_jira_issue",
+    args: { projectKey: payload.project_key, issueType: payload.issue_type, summary: payload.summary,
+      description: payload.description_text + `\n\n_idempotency: ${payload.idempotency_key}_`, labels: payload.labels,
+      ...(payload.priority ? { priority: payload.priority } : {}), additionalFields: additional },
+    before: ["search_jira_issues with payload.dedupe_jql and with text ~ idempotency_key: any hit → reuse, do not create"],
+    after: ["post.mjs mark --ticket <KEY> --error-id <error_id> --service <service> --signature <signature>", "add the key to the Slack thread reply"],
+  };
+}
+
+/** Arguments to create the quarter epic itself when jira.epic.onMissing is create-epic and the search found nothing. */
+export function mcpEpicCall(payload) {
+  const ec = payload.epic.epic_create;
+  return {
+    tool: "create_jira_issue",
+    args: { projectKey: ec.project_key, issueType: "Epic", summary: ec.summary, description: ec.description_text + `\n\n_idempotency: ${ec.idempotency_key}_`, labels: ec.labels, additionalFields: {} },
+    before: ["search_jira_issues with payload.epic.epic_jql once more; a hit → use its key instead"],
+    after: ["use the returned key as the ticket's parent", "say in the thread reply: created epic <KEY> \"<summary>\""],
+  };
+}
+
 function webhookCreds() {
   if (process.env.INCIDENT_BOT_JIRA_WEBHOOK_URL) return { url: process.env.INCIDENT_BOT_JIRA_WEBHOOK_URL, secret: process.env.INCIDENT_BOT_JIRA_WEBHOOK_SECRET || "", source: "env" };
   const f = process.env.INCIDENT_BOT_JIRA_WEBHOOK_FILE;
@@ -185,7 +210,8 @@ async function main() {
       const via = (cfg.jira || {}).createVia || "none";
       const payload = readJson(opt.payload);
       if (via === "webhook") { const r = await createViaWebhook(payload); if (r.error) fail("jira", r.error, r.code); return out(r); }
-      if (via === "mcp") return out({ accepted: false, via: "mcp", instruction: "call the Atlassian create-issue tool with this payload; then post.mjs mark --ticket <KEY>", payload });
+      if (via === "mcp") return out({ accepted: false, via: "mcp", instruction: "call the Agent1 Atlassian MCP tool (name ends in create_jira_issue) with mcp_call.args; on success post.mjs mark --ticket <KEY> --error-id … --service … --signature …",
+        mcp_call: mcpCreateCall(payload), epic_call: payload.epic && payload.epic.epic_create && !payload.epic_key ? mcpEpicCall(payload) : null, payload });
       return out({ accepted: false, via: "none", instruction: "jira.createVia is none; nothing created", payload });
     }
     fail("jira", "usage: jira.mjs classify|local|jql|epic|payload|create …", EXIT.USAGE);
