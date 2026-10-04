@@ -4,6 +4,22 @@ All commands run from the repo root. `AGENT1_API_KEY` is the operator's personal
 environment only and never printed. Without a key, the same API calls work from a logged-in browser tab on
 agent1.prod.apps.auto1.team with `fetch('/api/…', {credentials:'include'})`.
 
+## REMEX objects (created 2026-10-04, browser route)
+
+| Object | Id |
+|---|---|
+| Skill `incident-bot-guard` (restricted) | `9c802e17-92f3-4cb0-aa41-539fb38baeee` |
+| Agent `incident-bot` (private during dry-run) | `34c99c2a-7069-4ec0-b8ea-184ce2dff1b0` |
+| Agent `incident-bot-log-correlator` | `6544c761-41c9-4a3e-9555-628167755f47` |
+| Agent `incident-bot-git-correlator` | `bc7c3a19-c1e2-44be-b464-6791358a6296` |
+| Agent `incident-bot-jira-classifier` | `d558a0d0-9bcb-40bb-9657-909051340dd9` |
+| Agent `incident-bot-watchdog` (human-owned, agent1-mcp) | `c471d1cd-da07-4989-8435-d8aee46ed185` |
+| Workflow `incident-bot · triage-one` | `46e5c3b6-8565-4fb6-90f3-b2c5f6e38c47` |
+| Workflow `incident-bot · jira-ticket` | `d25f765c-90b4-4513-b01d-aab1a3c7fcfe` |
+| Task `incident-bot · poll · remex` — hourly, **dry-run**, project san-de/incident-bot@main, notify on | `10da65be-3f6f-4323-8642-7c4a28915457` |
+| Task `incident-bot · watchdog · remex` — daily 08:30 Berlin | `53b49a97-bcc5-4137-8cc0-76c416740bc6` |
+| Previous bot: task `rota-triage · remex` (still scheduled hourly; pause it once the dry run is trusted) | `b776259b-049b-4692-ba15-e7fa61e42df4` |
+
 ## Objects per team
 
 | Object | Created by | Notes |
