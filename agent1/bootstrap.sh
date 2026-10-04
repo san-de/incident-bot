@@ -111,7 +111,7 @@ case "$cmd" in
       title="incident-bot · poll · $TEAM"
       projects="[{\"repoUrl\":\"$REPO\",\"branch\":\"$REF\"}]"
     else
-      [ -n "$CRON" ] || CRON="30 8 * * *"
+      [ -n "$CRON" ] || CRON="30 8 * * *"; [ -n "$AGENT_ID" ] && [ "$AGENT_ID" = "$(printf "%s" "$cfg" | jget agent1.agentId)" ] && AGENT_ID="$(printf "%s" "$cfg" | jget agent1.watchdogAgentId)"
       desc="$(render "$HERE/tasks/watchdog.md" "TEAM=$TEAM" "TEAM_CHANNEL_ID=$channel")"
       title="incident-bot · watchdog · $TEAM"
       projects="[]"

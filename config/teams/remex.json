@@ -8,10 +8,12 @@
     "slackUserId": "U0B4N3ZPRFE"
   },
   "agent1": {
-    "agentId": "bba04586-6738-43fd-accf-63d49265be29",
+    "agentId": "34c99c2a-7069-4ec0-b8ea-184ce2dff1b0",
     "boardId": "7c0842d9-8a01-4e69-a046-70d46a43a2a2",
     "runAs": "ashish.ranjan",
-    "serviceAccount": null
+    "serviceAccount": null,
+    "watchdogAgentId": "c471d1cd-da07-4989-8435-d8aee46ed185",
+    "previousAgentId": "bba04586-6738-43fd-accf-63d49265be29"
   },
   "slack": {
     "workspaceUrl": "https://wkda-eng.slack.com",

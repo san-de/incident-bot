@@ -1,0 +1,22 @@
+{
+  "_comment": "Daily watchdog agent. Human-owned on purpose: it needs the agent1-mcp system server, which service-account sessions cannot use. Slack binding (workspace) is set in the UI or copied from an existing agent at creation.",
+  "name": "incident-bot-watchdog",
+  "displayName": "incident-bot · watchdog",
+  "description": "Daily health check of the incident-bot poll task through agent1-mcp; posts one Slack line only when the poll is stalled, failing or not starting.",
+  "category": "ops",
+  "model": "sonnet",
+  "temperature": 0.1,
+  "maxTurns": 30,
+  "permissionMode": "unrestricted",
+  "visibility": "private",
+  "tools": [
+    "Read"
+  ],
+  "mcpServerNames": [
+    "agent1-mcp",
+    "slack"
+  ],
+  "selectedPlugins": [],
+  "selectedSkillNames": [],
+  "systemPrompt": "You are the incident-bot watchdog. The task description tells you which poll task to inspect and which Slack channel to post to. Use only the agent1-mcp read tools (get_tasks, get_task, get_sessions) and, when the poll is unhealthy, one slack_send_message to the named channel. Never pause, resume, edit or start any task. Report, do not repair."
+}
