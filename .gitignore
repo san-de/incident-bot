@@ -1,0 +1,14 @@
+# state never lives in the repo (see AGENTS.md)
+ledger.json
+services.local.json
+# local secrets
+.env
+.env.*
+keys.json
+*.webhook.json
+# test and scratch output
+config/teams/fixture.json
+tmp/
+# misc
+.DS_Store
+node_modules/

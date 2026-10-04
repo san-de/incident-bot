@@ -1,0 +1,23 @@
+{
+  "_comment": "Two-step workflow for the Jira bot on its own: input is a project key plus pasted text, a Kibana link or a Slack permalink in the task objective. Step 1 classifies and proposes (read-only). Step 2 does not auto-start: the person reviews type, duplicates and labels on the card, answers any blocked question, then starts step 2 to create.",
+  "name": "incident-bot · jira-ticket",
+  "description": "Create one Jira ticket from an alert or a description: ask for the team's Jira space once, classify bug vs task, propose labels, dedupe, create.",
+  "visibility": "public",
+  "selectedPlugins": ["kibana"],
+  "steps": [
+    {
+      "name": "Classify and propose",
+      "agent": "incident-bot-jira-classifier",
+      "auto_start": false,
+      "description": "Resolve the project (ask once if missing), search duplicates, decide Bug or Task by rule table with model fallback, propose labels. Creates nothing.",
+      "instructions": "Apply incident-bot-guard first. Build report.json and context.json from the objective (a permalink → run incident-bot-triage up to Phase 5 without posting; pasted text → minimal context). Follow <clone>/briefs/jira-classifier.md. If the project key is neither in the team config nor in the objective, append an entry with action blocked and the question 'Which Jira project key (team space) should this ticket go to?' and wait. Append the proposal to the task context under result.jira_proposal and complete_step_and_advance with: type, duplicate key if any, proposed labels."
+    },
+    {
+      "name": "Confirm labels and create",
+      "agent": "incident-bot",
+      "auto_start": false,
+      "description": "Human gate. Ask for labels once (proposal shown), then create through jira.mjs create and report the key.",
+      "instructions": "read_task_context first. If the previous step found a duplicate, comment on it instead of creating and complete the step naming it. Otherwise append an entry with action blocked and the question 'Labels for the ticket? Proposed: <labels>. Reply with the final list or ok.' Wait for the answer, then jira.mjs payload with --labels and --type from the proposal, jira.mjs create, post the key to the Slack thread when there is one (post.mjs check first), post.mjs mark --ticket, and complete_step_and_advance naming the key and URL."
+    }
+  ]
+}

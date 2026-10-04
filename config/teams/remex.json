@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "team": "remex",
+  "displayName": "REMEX backend",
+  "enabled": true,
+  "owner": {
+    "name": "ashish.ranjan",
+    "slackUserId": "U0B4N3ZPRFE"
+  },
+  "agent1": {
+    "agentId": "bba04586-6738-43fd-accf-63d49265be29",
+    "boardId": "7c0842d9-8a01-4e69-a046-70d46a43a2a2",
+    "runAs": "ashish.ranjan",
+    "serviceAccount": null
+  },
+  "slack": {
+    "workspaceUrl": "https://wkda-eng.slack.com",
+    "channels": [
+      {
+        "id": "C0K4U8ZS7",
+        "name": "bot_rota"
+      }
+    ],
+    "searchTerms": [
+      "remex-be"
+    ],
+    "subteamIds": [
+      "S035DB3VC76"
+    ],
+    "ignoreSubteamIds": [
+      "S044K2A4256"
+    ]
+  },
+  "output": {
+    "threadReply": true,
+    "teamChannelId": "C03ARLX6HUJ",
+    "teamChannelName": "team-remex-be",
+    "dmUserIds": [],
+    "dryRun": false,
+    "signature": "🤖 automated triage by rota-triage on behalf of @remex-be — a human from the team will follow up; reply here if this is wrong",
+    "maxChars": 3500
+  },
+  "kibana": {
+    "env": "prod",
+    "baseUrl": "https://kibana.prod.services.auto1.team",
+    "askTool": "ask_app_debugging",
+    "perfTool": "ask_performance",
+    "maxWindowHours": 6,
+    "fallbackWindowMinutes": 30
+  },
+  "github": {
+    "orgs": [
+      "wkda"
+    ],
+    "cloneDepth": 200,
+    "localRepoRoots": [
+      "~/codebase"
+    ],
+    "lookbackHours": 48
+  },
+  "services": {
+    "file": "config/services.json",
+    "overlay": "services.local.json"
+  },
+  "poll": {
+    "cron": "0 * * * *",
+    "sinceFallbackMinutes": 75,
+    "firstRunLookbackHours": 1,
+    "searchLagMinutes": 10,
+    "maxPerRun": 5,
+    "maxPerRunBeforeNumbering": 5,
+    "timeBudgetMinutes": 45
+  },
+  "skip": {
+    "olderThanHours": 48,
+    "nonAlertMentions": true,
+    "alertCodes": []
+  },
+  "knownNoise": [],
+  "jira": {
+    "enabled": false,
+    "siteUrl": "https://wkdauto.atlassian.net",
+    "project": "REMEX",
+    "epics": {
+      "bug": "REMEX-2957",
+      "tech-improvement": "REMEX-2956"
+    },
+    "issueTypes": {
+      "bug": "Bug",
+      "tech-improvement": "Task"
+    },
+    "labels": [
+      "agent-one",
+      "rota-triage"
+    ],
+    "createFor": [
+      "new after deploy",
+      "pre-existing, grew",
+      "infra",
+      "upstream dependency"
+    ],
+    "board": {
+      "id": "7c0842d9-8a01-4e69-a046-70d46a43a2a2",
+      "syncRule": "REMEX agent-one"
+    },
+    "createVia": "none"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Workflow-step agent for the Jira read-only part (classify, dedupe, labels). Creation happens in the next step after a person confirmed.",
+  "name": "incident-bot-jira-classifier",
+  "displayName": "incident-bot · jira-classifier",
+  "description": "Chunk 8 of incident-bot, read-only: should a ticket exist, which existing one does it duplicate, Bug or Task, which labels. Creates nothing.",
+  "category": "ops",
+  "model": "sonnet",
+  "temperature": 0.1,
+  "maxTurns": 30,
+  "permissionMode": "unrestricted",
+  "visibility": "public",
+  "tools": ["Bash", "Read"],
+  "mcpServerNames": ["atlassian"],
+  "selectedPlugins": [],
+  "selectedSkillNames": [],
+  "systemPrompt": "You are the jira-classifier step of incident-bot. Call read_task_context first; report.json, context.json and the clone path are there. Follow <clone>/briefs/jira-classifier.md exactly and append the result to the task context under result.jira_proposal. Create nothing. If the project key is missing from the team config and the task context, append an entry with action blocked and the question 'Which Jira project key should this ticket go to?'. Finish with complete_step_and_advance summarising: type, duplicates, proposed labels."
+}

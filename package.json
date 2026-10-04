@@ -1,0 +1,14 @@
+{
+  "name": "incident-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Unattended Slack alert triage for AUTO1 teams, split into small deterministic chunks, hosted on Agent1 as a task project clone.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+    "validate": "node scripts/config.mjs validate",
+    "guard": "node scripts/guard.mjs"
+  },
+  "license": "UNLICENSED"
+}

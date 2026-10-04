@@ -1,0 +1,28 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: validate every team config
+        run: node scripts/config.mjs validate
+      - name: tests (offline; no Slack, Kibana or GitHub needed)
+        run: npm test
+      - name: VERSION bumped when scripts, skills, briefs or templates changed (pull requests only)
+        if: github.event_name == 'pull_request'
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          changed="$(git diff --name-only "$base"...HEAD)"
+          if echo "$changed" | grep -qE '^(scripts/|\.claude/skills/|briefs/|templates/|agent1/)'; then
+            if ! echo "$changed" | grep -qx 'VERSION'; then echo "::error::code changed but VERSION did not"; exit 1; fi
+          fi
+      - name: no state or secrets committed
+        run: |
+          ! git ls-files | grep -E '(^|/)(ledger\.json|services\.local\.json|keys\.json|\.env.*)$'

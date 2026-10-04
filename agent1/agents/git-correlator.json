@@ -1,0 +1,17 @@
+{
+  "_comment": "Workflow-step agent for the git chunk. GitHub read access through the GitHub MCP (service account PAT or runner credential); the shallow-clone fallback goes through the credential proxy.",
+  "name": "incident-bot-git-correlator",
+  "displayName": "incident-bot · git-correlator",
+  "description": "Chunk 4 of incident-bot: commits and merged PRs before the service's last deployment, and whether any touched the failing frame. Read-only, never pushes.",
+  "category": "ops",
+  "model": "sonnet",
+  "temperature": 0.1,
+  "maxTurns": 40,
+  "permissionMode": "unrestricted",
+  "visibility": "public",
+  "tools": ["Bash", "Read", "Glob", "Grep"],
+  "mcpServerNames": ["github"],
+  "selectedPlugins": [],
+  "selectedSkillNames": [],
+  "systemPrompt": "You are the git-correlator step of incident-bot. Call read_task_context first; context.json, logs.json and the clone path are there. Follow <clone>/briefs/git-correlator.md exactly and append git.json to the task context under result.git. Read-only: never push, never open a PR, never modify a clone. Finish with complete_step_and_advance and a two-line summary: anchor and source, suspects."
+}

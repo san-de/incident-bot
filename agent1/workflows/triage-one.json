@@ -1,0 +1,23 @@
+{
+  "_comment": "Two-step workflow for a single alert. Step 1 analyses and posts the Slack reply (no questions). Step 2 does not auto-start: a person reads the result card, then starts it to file a Jira ticket. agent_id values are resolved by bootstrap.sh from agent1/agents/*.json names.",
+  "name": "incident-bot · triage-one",
+  "description": "Triage one tagged Slack alert end to end, then optionally file a Jira ticket after a human looks at the analysis.",
+  "visibility": "public",
+  "selectedPlugins": ["kibana"],
+  "steps": [
+    {
+      "name": "Analyze and reply",
+      "agent": "incident-bot",
+      "auto_start": false,
+      "description": "Run incident-bot-triage for the permalink in the task objective: context → logs ‖ git → report → Slack reply. No questions.",
+      "instructions": "Apply incident-bot-guard first. Then follow <clone>/.claude/skills/triage/SKILL.md with `triage --team <team from the objective> <permalink from the objective>`. Append report.json and context.json to the task context under result. Finish with complete_step_and_advance giving the one-line read and the classification. If the ledger says the thread was already replied to, say so and complete the step without posting."
+    },
+    {
+      "name": "File Jira ticket",
+      "agent": "incident-bot-jira-classifier",
+      "auto_start": false,
+      "description": "Human gate: start this step only if a ticket is wanted. Dedupe, classify, confirm project and labels through a blocked question when missing, then create via the team's configured path.",
+      "instructions": "read_task_context first; report.json and context.json are in the previous step's result. Follow <clone>/.claude/skills/jira-ticket/SKILL.md in interactive mode: a missing project key or an unconfirmed label set becomes an append_to_task_context entry with action blocked and one question. After the person answers, create the issue through jira.mjs create (or the Atlassian MCP when createVia is mcp), post the key into the alert thread via post.mjs check + slack_send_message, mark the ledger with --ticket, and complete_step_and_advance naming the key."
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "_comment": "Shape of the Agent1 automation that creates Jira issues, because no Agent1 session can do it natively today (system Atlassian MCP is read-only, automations have no jira.create action). Build it once in the Automations UI per team or per Jira site, export it, and keep the export here. The Jira API token lives in the automation's Secrets panel and is referenced by name; it never appears in this file or in the flow history. Field names below mirror the automation editor; the import may need the exported id/version fields the UI adds.",
+  "name": "incident-bot · jira-create",
+  "trigger": {
+    "type": "webhook",
+    "_note": "Webhook availability is a platform setting. The webhook URL and X-Webhook-Secret value go to the task owner (or service account) as INCIDENT_BOT_JIRA_WEBHOOK_URL / _SECRET or a JSON file at INCIDENT_BOT_JIRA_WEBHOOK_FILE. Idempotency-Key is sent per call (incident-bot:<team>:<thread_ts>)."
+  },
+  "steps": [
+    {
+      "id": "guard",
+      "type": "filter",
+      "condition": "{{trigger.body.event}} == 'incident_bot.create_issue' and {{trigger.body.payload.project_key}} != ''"
+    },
+    {
+      "id": "search",
+      "type": "action",
+      "action": "jira.search",
+      "inputs": { "jql": "project = {{trigger.body.payload.project_key}} AND statusCategory != Done AND created >= -30d AND text ~ \"{{trigger.body.payload.idempotency_key}}\"", "maxResults": 1, "fields": "key,summary,status" },
+      "_note": "Second dedupe line: the idempotency key is written into the description, so a retried webhook finds the ticket it already created."
+    },
+    {
+      "id": "already",
+      "type": "branch",
+      "condition": "{{steps.search.output.total}} > 0",
+      "then": [ { "id": "return_existing", "type": "code", "code": "return { created: false, key: steps.search.output.issues[0].key, reason: 'exists' };" } ],
+      "else": [
+        {
+          "id": "create",
+          "type": "http",
+          "method": "POST",
+          "url": "https://<site>.atlassian.net/rest/api/3/issue",
+          "auth": { "type": "basic", "secret": "jira-incident-bot" },
+          "headers": { "Content-Type": "application/json" },
+          "body_json": {
+            "fields": {
+              "project": { "key": "{{trigger.body.payload.project_key}}" },
+              "issuetype": { "name": "{{trigger.body.payload.issue_type}}" },
+              "summary": "{{trigger.body.payload.summary}}",
+              "labels": "{{trigger.body.payload.labels}}",
+              "description": {
+                "type": "doc", "version": 1,
+                "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "{{trigger.body.payload.description_text}}\n\nidempotency: {{trigger.body.payload.idempotency_key}}" } ] } ]
+              }
+            }
+          },
+          "fail_on_error": true
+        },
+        { "id": "return_created", "type": "code", "code": "return { created: true, key: steps.create.output.body.key, url: 'https://<site>.atlassian.net/browse/' + steps.create.output.body.key };" }
+      ]
+    }
+  ],
+  "response": "{{steps.return_created.output}} or {{steps.return_existing.output}}",
+  "secrets": [ { "name": "jira-incident-bot", "kind": "basic", "_note": "username = the bot's Atlassian email, password = an API token. Create under Automations → Secrets. Rotate there." } ]
+}

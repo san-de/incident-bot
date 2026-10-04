@@ -1,0 +1,26 @@
+{
+  "hits": [
+    { "ts": "1790000100.000100", "threadTs": "1790000000.000001", "channelId": "C0FIXTURE1", "user": "UBOTSRE", "permalink": "https://example.slack.com/archives/C0FIXTURE1/p1790000100000100?thread_ts=1790000000.000001",
+      "text": "<!subteam^S0FIXTURE01|fixture-be>, please take a look: *[SRE0042]: Error rate above threshold | pricing-service*" },
+    { "ts": "1790000200.000200", "threadTs": "1790000200.000200", "channelId": "C0FIXTURE1", "user": "UHUMAN1", "permalink": "https://example.slack.com/archives/C0FIXTURE1/p1790000200000200",
+      "text": "<!subteam^S0FIXTURE01|fixture-be> can someone review my PR later?" },
+    { "ts": "1790000300.000300", "threadTs": "1790000300.000300", "channelId": "C0FIXTURE1", "user": "UHUMAN2", "permalink": "https://example.slack.com/archives/C0FIXTURE1/p1790000300000300",
+      "text": "<!subteam^S0IGNORED01|fixture-be> please check https://kibana.prod.services.auto1.team/app/discover#/?_g=(time:(from:now-15m,to:now))" },
+    { "ts": "1790000400.000400", "threadTs": "1790000400.000400", "channelId": "C0FIXTURE1", "user": "UHUMAN3", "permalink": "https://example.slack.com/archives/C0FIXTURE1/p1790000400000400",
+      "text": "<!subteam^S0FIXTURE01|fixture-be> *[SRE0099]: Known flaky check | legacy-service*" },
+    { "ts": "1790000500.000500", "threadTs": "1790000500.000500", "channelId": "C0FIXTURE1", "user": "UHUMAN4", "permalink": "https://example.slack.com/archives/C0FIXTURE1/p1790000500000500",
+      "text": "<!subteam^S0FIXTURE01|fixture-be> *[SRE0043]: Latency | margin-service*" },
+    { "ts": "1790000600.000600", "threadTs": "1790000600.000600", "channelId": "C0FIXTURE1", "user": "UHUMAN5", "permalink": "https://example.slack.com/archives/C0FIXTURE1/p1790000600000600",
+      "text": "<!subteam^S0FIXTURE01|fixture-be> *[SRE0044]: Timeouts | zrt-admin-dashboard*" },
+    { "ts": "1789000000.000000", "threadTs": "1789000000.000000", "channelId": "C0FIXTURE1", "user": "UHUMAN6", "permalink": "https://example.slack.com/archives/C0FIXTURE1/p1789000000000000",
+      "text": "<!subteam^S0FIXTURE01|fixture-be> *[SRE0045]: Old | old-service*" }
+  ],
+  "threads": {
+    "1790000000.000001": [
+      { "ts": "1790000000.000001", "user": "UKIBANA", "text": "*[SRE0042]: Error rate above threshold*\nAccount: prod\nDetected for: *pricing-service*\nError id: *2b06a360*\n<https://kibana.prod.services.auto1.team/app/discover#/?_g=(time:(from:'2026-10-04T07:50:00.000Z',to:'2026-10-04T08:20:00.000Z'))&_a=(filters:!((meta:(key:service.name,params:(query:pricing-service)),query:(match_phrase:(service.name:pricing-service))),(meta:(key:error.id,params:(query:'2b06a360')),query:(match_phrase:(error.id:'2b06a360')))))|:evil_kibana:>" },
+      { "ts": "1790000050.000050", "user": "UBOTSRE", "text": ":jenkins: Last deployment 3 hours ago by someone (<https://jenkins.example/job/pricing-service/123|job>) release v1.42.0 · :jira: SI-1234" },
+      { "ts": "1790000100.000100", "user": "UBOTSRE", "text": "<!subteam^S0FIXTURE01|fixture-be>, please take a look: *[SRE0042]: Error rate above threshold | pricing-service*" },
+      { "ts": "1790000150.000150", "user": "UHUMAN1", "text": "stack: java.lang.NullPointerException: price was null\n\tat com.auto1.pricing.PriceService.compute(PriceService.java:142)" }
+    ]
+  }
+}

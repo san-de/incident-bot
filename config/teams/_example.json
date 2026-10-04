@@ -1,0 +1,106 @@
+{
+  "_comment": "Copy to config/teams/<team>.json, fill every REPLACE_… value, set enabled true, open a PR. Ids: channel C…, user group S… (from a raw <!subteam^S…|name> mention), user U…. Validate with: node scripts/config.mjs validate --team <team>",
+  "version": 1,
+  "team": "REPLACE_team-slug",
+  "displayName": "REPLACE Team name",
+  "enabled": false,
+  "owner": {
+    "name": "REPLACE firstname.lastname",
+    "slackUserId": "REPLACE_U0000000000"
+  },
+  "agent1": {
+    "agentId": "REPLACE agent id of a team-owned Agent1 agent (Slack MCP bound, kibana plugin)",
+    "boardId": "REPLACE team board id (runs and cost show up there)",
+    "runAs": "REPLACE firstname.lastname whose personal Agent1 key runs the task",
+    "serviceAccount": null
+  },
+  "slack": {
+    "workspaceUrl": "https://wkda-eng.slack.com",
+    "channels": [
+      {
+        "id": "C0K4U8ZS7",
+        "name": "bot_rota"
+      }
+    ],
+    "searchTerms": [
+      "REPLACE your-usergroup-handle"
+    ],
+    "subteamIds": [
+      "REPLACE_S0000000000"
+    ],
+    "ignoreSubteamIds": []
+  },
+  "output": {
+    "threadReply": true,
+    "teamChannelId": "REPLACE_C0000000000",
+    "teamChannelName": "REPLACE team-channel",
+    "dmUserIds": [],
+    "dryRun": true,
+    "signature": "🤖 automated triage by rota-triage on behalf of @REPLACE-usergroup — a human from the team will follow up; reply here if this is wrong",
+    "maxChars": 3500
+  },
+  "kibana": {
+    "env": "prod",
+    "baseUrl": "https://kibana.prod.services.auto1.team",
+    "askTool": "ask_app_debugging",
+    "perfTool": "ask_performance",
+    "maxWindowHours": 6,
+    "fallbackWindowMinutes": 30
+  },
+  "github": {
+    "orgs": [
+      "wkda"
+    ],
+    "cloneDepth": 200,
+    "localRepoRoots": [],
+    "lookbackHours": 48
+  },
+  "services": {
+    "file": "config/services.json",
+    "overlay": "services.local.json"
+  },
+  "poll": {
+    "cron": "0 * * * *",
+    "sinceFallbackMinutes": 75,
+    "firstRunLookbackHours": 1,
+    "searchLagMinutes": 10,
+    "maxPerRun": 5,
+    "maxPerRunBeforeNumbering": 5,
+    "timeBudgetMinutes": 45
+  },
+  "skip": {
+    "olderThanHours": 48,
+    "nonAlertMentions": true,
+    "alertCodes": []
+  },
+  "knownNoise": [],
+  "jira": {
+    "_comment": "Phase 6 (Jira handoff). Keep enabled false until the team trusts the analyses. epics: one open epic per ticket kind; the agent-one label hands the ticket to the team's Agent1 board sync rule.",
+    "enabled": false,
+    "siteUrl": "https://wkdauto.atlassian.net",
+    "project": "REPLACE_PROJECT",
+    "epics": {
+      "bug": "REPLACE_PROJECT-0000",
+      "tech-improvement": "REPLACE_PROJECT-0000"
+    },
+    "issueTypes": {
+      "bug": "Bug",
+      "tech-improvement": "Task"
+    },
+    "labels": [
+      "agent-one",
+      "rota-triage"
+    ],
+    "createFor": [
+      "new after deploy",
+      "pre-existing, grew",
+      "infra",
+      "upstream dependency"
+    ],
+    "board": {
+      "id": "REPLACE team board id",
+      "syncRule": "REPLACE sync rule name"
+    },
+    "createVia": "none"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "classification": "new after deploy",
+  "what": "pricing-service started throwing NullPointerException in PriceService.compute at 09:52 CEST, 142 times in 30 minutes against 2 in the previous window.",
+  "where": "wkda/pricing-service — src/main/java/com/auto1/pricing/PriceService.java:142 (PriceService#compute) · last touched a1b2c3d \"Handle optional base price\" (2026-10-04)",
+  "read": "A new code path dereferences an optional base price that upstream now omits; started with release v1.42.0 deployed 3 hours before the alert.",
+  "one_line": "NPE in PriceService.compute since v1.42.0 deploy, 142× in 30 min",
+  "next_action": "Null-guard basePrice in PriceService.compute or roll back v1.42.0; confirm with pricing-core whether omitting basePrice is intended.",
+  "evidence": ["`java.lang.NullPointerException: price was null` — 142× in window, first 09:52 CEST, trace.id 3cfc330cb7e95847, error.id 2b06a360", "GET /v1/price → pricing-core 200 in 40 ms, then NPE in compute", "<https://kibana.prod.services.auto1.team/app/discover#/|Kibana>"],
+  "open_points": "none",
+  "kibana": { "service": "pricing-service", "window_utc": "2026-10-04T07:50:00Z..2026-10-04T08:20:00Z", "count": 142, "baseline_count": 2, "signature": "java.lang.NullPointerException: price was null", "first_app_frame": "com.auto1.pricing.PriceService.compute(PriceService.java:142)" },
+  "git": { "repo": "wkda/pricing-service", "last_deploy": "2026-10-04T05:01:40Z", "suspects": [ { "ref": "#812", "title": "Handle optional base price", "why": "touches PriceService.java 6 h before the deploy" } ] },
+  "gaps": []
+}

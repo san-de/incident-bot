@@ -1,0 +1,137 @@
+{
+  "_comment": "service.name (as seen in Kibana / 'Detected for') → repo. localPath is optional and relative to github.localRepoRoots. knownNoise lists error signatures that are chronic baseline, not findings. Resolve once, cache forever: when the skill discovers a new mapping it writes it here. knownIssues[] records already-analysed error.id/exception signatures with the ticket that owns them.",
+  "services": {
+    "zrt-admin-dashboard": {
+      "repo": "wkda/zrt-admin-dashboard-service",
+      "localPath": "zrt-admin-dashboard-service",
+      "knownNoise": []
+    },
+    "zrt-admin-dashboard-service": {
+      "repo": "wkda/zrt-admin-dashboard-service",
+      "localPath": "zrt-admin-dashboard-service",
+      "knownNoise": []
+    },
+    "remarketing-recommendation": {
+      "repo": "wkda/remarketing-recommendation-service",
+      "knownNoise": []
+    },
+    "merchant-self-inspection": {
+      "repo": "wkda/merchant-self-inspection-service",
+      "knownNoise": []
+    },
+    "msi": {
+      "repo": "wkda/merchant-self-inspection-service",
+      "knownNoise": []
+    },
+    "margin": {
+      "repo": "wkda/margin-service",
+      "knownNoise": []
+    },
+    "new-margin": {
+      "repo": "wkda/new-margin-service",
+      "knownNoise": [],
+      "knownIssues": [
+        {
+          "errorId": "2b06a360",
+          "exception": "NullPointerException in com.auto1.core.security.web.feign.XForwardedHeadersInterceptor.propagateHeader:96",
+          "summary": "Secondary symptom of a /v2/margins/batch timeout: async pipeline's risky-leads Feign call runs after Jetty recycled the request; defect is in core-security-web (no guard). Same error.id on logistics-route Jun 2026 (LOG-11654).",
+          "firstSeen": "2026-08-29",
+          "analysedOn": "2026-09-07",
+          "ticket": null
+        },
+        {
+          "errorId": "fdd58556",
+          "exception": "SQLTransientConnectionException: dataSource - Connection is not available, request timed out after 30000ms (total=10, active=10)",
+          "summary": "HikariCP pool exhausted for ~1 min on 2026-09-16 11:01 CEST (230 lines, 0 before in 14 d). Pool reports total=10 while prod config sets hikari.maximum-pool-size 15 — verify the property is applied. Fired SRE0077 + SRE0053 together.",
+          "firstSeen": "2026-09-16",
+          "analysedOn": "2026-09-17",
+          "ticket": null
+        }
+      ]
+    },
+    "remarketing-email-feeder": {
+      "repo": "wkda/remarketing-email-feeder-service",
+      "knownNoise": []
+    },
+    "remarketing-email-sender": {
+      "repo": "wkda/remarketing-email-sender-service",
+      "knownNoise": []
+    },
+    "remarketing-price": {
+      "repo": "wkda/remarketing-price-service",
+      "knownNoise": []
+    },
+    "zrt-merchant": {
+      "repo": "wkda/zrt-merchant-service",
+      "knownNoise": []
+    },
+    "zrt-auction": {
+      "repo": "wkda/zrt-auction-service",
+      "knownNoise": []
+    },
+    "custom-auction": {
+      "repo": "wkda/custom-auction-service",
+      "localPath": "custom-auction-service",
+      "knownNoise": []
+    },
+    "remarketing-operations": {
+      "repo": "wkda/remarketing-operations-service",
+      "localPath": "remarketing-operations-service",
+      "knownNoise": []
+    },
+    "remarketing-messaging-center": {
+      "repo": "wkda/remarketing-messaging-center-service",
+      "localPath": "remarketing-messaging-center-service",
+      "knownNoise": []
+    },
+    "remarketing-document-reconciliation": {
+      "repo": "wkda/remarketing-document-reconciliation-service",
+      "localPath": "remarketing-document-reconciliation-service",
+      "knownNoise": [],
+      "knownIssues": [
+        {
+          "errorId": "11af7d93",
+          "exception": "NullPointerException: Boolean.booleanValue() on AIComparisonFieldFeedbackResponse.getHasIssue() at DocumentReconciliationConverter.convert:24",
+          "summary": "AI comparison verdict without hasIssue unboxed into the entity's primitive boolean; the whole feedback request fails with 500. Fix in PR #74 (REMEX-2927), merge + deploy pending as of 2026-09-17.",
+          "firstSeen": "2026-09-14",
+          "analysedOn": "2026-09-17",
+          "ticket": "REMEX-2927"
+        }
+      ]
+    },
+    "car-details": {
+      "repo": "wkda/car-details-service",
+      "localPath": "car-details-service",
+      "knownNoise": []
+    },
+    "current-price": {
+      "repo": "wkda/current-price-service",
+      "knownNoise": []
+    },
+    "admin-sales-dashboard": {
+      "repo": "wkda/admin-sales-dashboard-service",
+      "localPath": "admin-sales-dashboard-service",
+      "knownNoise": []
+    },
+    "admin-sales-merchant-details": {
+      "repo": "wkda/admin-sales-merchant-details-service",
+      "localPath": "admin-sales-merchant-details-service",
+      "knownNoise": []
+    },
+    "visibility-restriction": {
+      "repo": "wkda/visibility-restriction-service",
+      "knownNoise": [],
+      "_note": "auc-be owned; appears in remex-be threads via custom-auction upstream calls"
+    },
+    "new-margin-service": {
+      "repo": "wkda/new-margin-service",
+      "knownNoise": [],
+      "_alias": "new-margin"
+    }
+  },
+  "upstreamHints": {
+    "CustomAuctionGroupBatchApi": "custom-auction",
+    "wkda.api.mycars.remarketing": "remarketing-recommendation",
+    "http://deal/": "deal (retail; not REMEX-owned)"
+  }
+}

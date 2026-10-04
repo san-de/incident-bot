@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "team": "fixture",
+  "displayName": "Fixture team",
+  "enabled": true,
+  "owner": { "name": "fixture.owner", "slackUserId": "U0FIXTURE01" },
+  "agent1": { "agentId": "agent-fixture", "boardId": "board-fixture", "runAs": "service-account:incident-bot-fixture", "serviceAccount": "incident-bot-fixture" },
+  "slack": {
+    "workspaceUrl": "https://example.slack.com",
+    "channels": [ { "id": "C0FIXTURE1", "name": "bot_rota" } ],
+    "searchTerms": ["fixture-be"],
+    "subteamIds": ["S0FIXTURE01"],
+    "ignoreSubteamIds": ["S0IGNORED01"]
+  },
+  "output": { "threadReply": true, "teamChannelId": "C0TEAMCH01", "teamChannelName": "team-fixture", "dmUserIds": [], "dryRun": false,
+    "signature": "🤖 automated triage by incident-bot on behalf of @fixture-be — a human will follow up", "maxChars": 3500 },
+  "kibana": { "env": "prod", "askTool": "ask_app_debugging", "maxWindowHours": 6, "fallbackWindowMinutes": 30 },
+  "github": { "orgs": ["wkda"], "cloneDepth": 200, "lookbackHours": 48 },
+  "services": { "file": "config/services.json", "overlay": "services.local.json" },
+  "poll": { "cron": "0 * * * *", "sinceFallbackMinutes": 75, "firstRunLookbackHours": 1, "searchLagMinutes": 10, "maxPerRun": 2, "timeBudgetMinutes": 45 },
+  "skip": { "olderThanHours": 48, "nonAlertMentions": true, "alertCodes": ["SRE0099"] },
+  "jira": { "enabled": true, "siteUrl": "https://example.atlassian.net", "project": "FIX", "epics": { "bug": "FIX-1", "tech-improvement": "FIX-2" },
+    "labels": ["auto-triage"], "createFor": ["new after deploy", "pre-existing, grew", "infra", "upstream dependency"], "createVia": "none" }
+}
