@@ -7,7 +7,8 @@
 //
 //   node scripts/jira.mjs classify --team remex --report report.json
 //   node scripts/jira.mjs jql      --team remex --report report.json --context context.json
-//   node scripts/jira.mjs payload  --team remex --report report.json --context context.json [--labels a,b] [--type Bug|Task]
+//   node scripts/jira.mjs epic     --team remex [--type Bug|Task] [--context context.json | --at 2026-10-04T08:00:00Z]   # quarterly epic name + JQL
+//   node scripts/jira.mjs payload  --team remex --report report.json --context context.json [--labels a,b] [--type Bug|Task] [--epic-key REMEX-123]
 //   node scripts/jira.mjs create   --team remex --payload payload.json        # webhook path; URL + secret from env/file, never printed
 //
 // Webhook credentials: INCIDENT_BOT_JIRA_WEBHOOK_URL and INCIDENT_BOT_JIRA_WEBHOOK_SECRET in the environment, or a JSON
@@ -45,6 +46,35 @@ export function dedupeJql(cfg, report, ctx, days = 30) {
   return { jql: terms.length ? `${scope} AND (${terms.join(" OR ")}) ORDER BY created DESC` : null, terms, days };
 }
 
+/**
+ * Quarterly epic rule. The team keeps one epic per quarter, named by a pattern such as "BUG Q{Q} {YYYY}" (→ "BUG Q4 2026").
+ * The epic is resolved by name in the project at create time, from the alert's date (not today's), so a late triage of a
+ * 30 September alert still lands in Q3. Config:
+ *   jira.epic: { "namePattern": "BUG Q{Q} {YYYY}", "byType": { "Task": "TECH Q{Q} {YYYY}" }, "onMissing": "skip" | "create-without-epic" }
+ * jira.epics (static keys per type) stays as a fallback when no pattern is configured.
+ */
+export function quarterOf(date) {
+  const d = date instanceof Date ? date : new Date(date || Date.now());
+  const q = Math.floor(d.getUTCMonth() / 3) + 1;
+  return { q, year: d.getUTCFullYear(), label: `Q${q} ${d.getUTCFullYear()}` };
+}
+
+export function epicRule(cfg, type, atIso) {
+  const j = cfg.jira || {};
+  const e = j.epic || {};
+  const pattern = (e.byType || {})[type] || e.namePattern || null;
+  const staticKey = (j.epics_legacy || j.epics || {})[type === "Bug" ? "bug" : "tech-improvement"] || null;
+  if (!pattern) return { mode: staticKey ? "static" : "none", epic_key: staticKey, epic_name: null, epic_jql: null, on_missing: null };
+  const { q, year } = quarterOf(atIso);
+  const name = pattern.replace(/\{Q\}/g, String(q)).replace(/\{YYYY\}/g, String(year)).replace(/\{YY\}/g, String(year).slice(-2));
+  return {
+    mode: "by-name", epic_key: null, epic_name: name,
+    epic_jql: `project = ${j.project} AND issuetype = Epic AND summary ~ "\\"${name.replace(/"/g, "")}\\"" ORDER BY created DESC`,
+    on_missing: e.onMissing || "skip",
+    note: `resolve the epic key by running epic_jql; exact summary match wins; ${e.onMissing === "create-without-epic" ? "no match → create the ticket without an epic and record the gap" : "no match → do not create; report that the epic is missing"}`,
+  };
+}
+
 export function proposeLabels(cfg, ctx, extra) {
   const base = ((cfg.jira || {}).labels) || [];
   const svc = ctx.service_name ? [`service:${ctx.service_name}`] : [];
@@ -59,9 +89,11 @@ export function buildPayload(cfg, report, ctx, opts = {}) {
   if (!type) throw new Error("issue type undecided; pass --type Bug|Task after the model/person decided");
   const desc = render("jira", cfg, report, ctx).text;
   const summary = `[${ctx.alert_code || "alert"}] ${ctx.service_name || "service"}: ${(report.kibana || {}).signature || report.one_line || report.read || "triage"}`.slice(0, 200);
+  const epic = epicRule(cfg, type, ctx.message_time_utc || (ctx.window_utc || {}).to);
+  if (opts.epicKey) { epic.epic_key = opts.epicKey; epic.mode = epic.mode === "by-name" ? "by-name:resolved" : "override"; }
   const payload = {
     project_key: j.project, issue_type: type, summary, labels: proposeLabels(cfg, ctx, opts.labels),
-    epic_key: (j.epics || {})[type === "Bug" ? "bug" : "tech-improvement"] || null, priority: opts.priority || null,
+    epic, epic_key: epic.epic_key, priority: opts.priority || null,
     description_fields: { service: ctx.service_name, signature: (report.kibana || {}).signature || ctx.signature_hint || null, window_utc: `${ctx.window_utc.from}..${ctx.window_utc.to}`,
       count: (report.kibana || {}).count ?? null, kibana_link: (ctx.links || {}).kibana || null, slack_permalink: ctx.permalink || null,
       suspects: ((report.git || {}).suspects || []).map(s => `${s.ref} ${s.title}`), next_action: report.next_action || "" },
@@ -102,7 +134,8 @@ async function main() {
   try {
     if (cmd === "classify") return out(classify(readJson(opt.report), cfg));
     if (cmd === "jql") return out(dedupeJql(cfg, readJson(opt.report), readJson(opt.context), Number(opt.days || 30)));
-    if (cmd === "payload") return out(buildPayload(cfg, readJson(opt.report), readJson(opt.context), { labels: opt.labels, type: opt.type, priority: opt.priority }));
+    if (cmd === "epic") { const ctx = opt.context ? readJson(opt.context) : {}; return out(epicRule(cfg, opt.type || "Bug", opt.at || ctx.message_time_utc || (ctx.window_utc || {}).to)); }
+    if (cmd === "payload") return out(buildPayload(cfg, readJson(opt.report), readJson(opt.context), { labels: opt.labels, type: opt.type, priority: opt.priority, epicKey: opt["epic-key"] }));
     if (cmd === "create") {
       const via = (cfg.jira || {}).createVia || "none";
       const payload = readJson(opt.payload);
@@ -110,7 +143,7 @@ async function main() {
       if (via === "mcp") return out({ accepted: false, via: "mcp", instruction: "call the Atlassian create-issue tool with this payload; then post.mjs mark --ticket <KEY>", payload });
       return out({ accepted: false, via: "none", instruction: "jira.createVia is none; nothing created", payload });
     }
-    fail("jira", "usage: jira.mjs classify|jql|payload|create …", EXIT.USAGE);
+    fail("jira", "usage: jira.mjs classify|jql|epic|payload|create …", EXIT.USAGE);
   } catch (e) { fail("jira", e.message, EXIT.ERROR); }
 }
 

@@ -52,6 +52,29 @@ test("post: plan allows only the thread, the team channel and configured DMs", a
   assert.equal(allowedTarget(cfg, "C0ELSEWHERE", undefined, ctx).ok, false);
 });
 
+test("jira: quarterly epic by name from the alert date", async () => {
+  const { quarterOf, epicRule, buildPayload } = await import("../scripts/jira.mjs");
+  assert.deepEqual(quarterOf("2026-10-04T08:00:00Z"), { q: 4, year: 2026, label: "Q4 2026" });
+  assert.deepEqual(quarterOf("2026-12-31T23:59:59Z"), { q: 4, year: 2026, label: "Q4 2026" });
+  assert.deepEqual(quarterOf("2027-01-01T00:00:00Z"), { q: 1, year: 2027, label: "Q1 2027" });
+  assert.deepEqual(quarterOf("2026-09-30T22:00:00Z"), { q: 3, year: 2026, label: "Q3 2026" });
+  const bug = epicRule(cfg, "Bug", "2026-10-04T08:00:00Z");
+  assert.equal(bug.mode, "by-name");
+  assert.equal(bug.epic_name, "BUG Q4 2026");
+  assert.equal(bug.epic_key, null);
+  assert.match(bug.epic_jql, /^project = FIX AND issuetype = Epic AND summary ~ "\\"BUG Q4 2026\\""/);
+  assert.equal(bug.on_missing, "skip");
+  assert.equal(epicRule(cfg, "Task", "2027-02-10T08:00:00Z").epic_name, "TECH Q1 2027", "byType override");
+  const noPattern = JSON.parse(JSON.stringify(cfg)); delete noPattern.jira.epic;
+  assert.deepEqual(epicRule(noPattern, "Bug"), { mode: "static", epic_key: "FIX-1", epic_name: null, epic_jql: null, on_missing: null });
+  const p = buildPayload(cfg, report, ctx, {});
+  assert.equal(p.epic.epic_name, "BUG Q3 2026", "payload uses the alert's own date (fixture alert is 21 Sep 2026), not today");
+  assert.equal(p.epic_key, null, "unresolved until the search ran");
+  const resolved = buildPayload(cfg, report, ctx, { epicKey: "FIX-900" });
+  assert.equal(resolved.epic_key, "FIX-900");
+  assert.equal(resolved.epic.mode, "by-name:resolved");
+});
+
 test("jira: rule table, dedupe JQL, payload with labels and idempotency key", async () => {
   const { classify, dedupeJql, buildPayload, proposeLabels } = await import("../scripts/jira.mjs");
   assert.deepEqual(classify(report, cfg), { classification: "new after deploy", issue_type: "Bug", decided_by: "rule", should_create: true, reason: 'classification "new after deploy" maps to Bug' });
@@ -64,7 +87,7 @@ test("jira: rule table, dedupe JQL, payload with labels and idempotency key", as
   const p = buildPayload(cfg, report, ctx, { labels: "pricing" });
   assert.equal(p.project_key, "FIX");
   assert.equal(p.issue_type, "Bug");
-  assert.equal(p.epic_key, "FIX-1");
+  assert.equal(p.epic.epic_name, "BUG Q3 2026");
   assert.equal(p.idempotency_key, "incident-bot:fixture:1790000000.000001");
   assert.match(p.summary, /^\[SRE0042\] pricing-service: java\.lang\.NullPointerException/);
   assert.match(p.description_text, /h3\. Alert/);

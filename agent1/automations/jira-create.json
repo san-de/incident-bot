@@ -19,6 +19,18 @@
       "_note": "Second dedupe line: the idempotency key is written into the description, so a retried webhook finds the ticket it already created."
     },
     {
+      "id": "find_epic",
+      "type": "action",
+      "action": "jira.search",
+      "inputs": { "jql": "{{trigger.body.payload.epic.epic_jql}}", "maxResults": 5, "fields": "key,summary" },
+      "_note": "Quarterly epic by name (payload.epic.epic_name, e.g. BUG Q4 2026). Runs only when payload.epic.mode is by-name; a pre-resolved epic_key skips this."
+    },
+    {
+      "id": "epic_key",
+      "type": "code",
+      "code": "const p = trigger.body.payload; if (p.epic_key) return { key: p.epic_key, how: 'given' }; const want = (p.epic && p.epic.epic_name || '').trim().toLowerCase(); const hit = (steps.find_epic.output.issues || []).find(i => (i.fields.summary || '').trim().toLowerCase() === want); if (hit) return { key: hit.key, how: 'by-name' }; if (p.epic && p.epic.on_missing === 'create-without-epic') return { key: null, how: 'missing-allowed' }; throw new Error('epic not found: ' + (p.epic && p.epic.epic_name) + ' in ' + p.project_key + ' — create the quarter epic, then retry');"
+    },
+    {
       "id": "already",
       "type": "branch",
       "condition": "{{steps.search.output.total}} > 0",
@@ -37,6 +49,8 @@
               "issuetype": { "name": "{{trigger.body.payload.issue_type}}" },
               "summary": "{{trigger.body.payload.summary}}",
               "labels": "{{trigger.body.payload.labels}}",
+              "parent": { "key": "{{steps.epic_key.output.key}}" },
+              "_note": "Jira Cloud links an issue to its epic through the parent field. Omit parent when steps.epic_key.output.key is null (missing-allowed).",
               "description": {
                 "type": "doc", "version": 1,
                 "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "{{trigger.body.payload.description_text}}\n\nidempotency: {{trigger.body.payload.idempotency_key}}" } ] } ]
@@ -45,7 +59,7 @@
           },
           "fail_on_error": true
         },
-        { "id": "return_created", "type": "code", "code": "return { created: true, key: steps.create.output.body.key, url: 'https://<site>.atlassian.net/browse/' + steps.create.output.body.key };" }
+        { "id": "return_created", "type": "code", "code": "return { created: true, key: steps.create.output.body.key, epic: steps.epic_key.output.key, url: 'https://<site>.atlassian.net/browse/' + steps.create.output.body.key };" }
       ]
     }
   ],

@@ -121,7 +121,14 @@ export function validate(team) {
   if (j && j.enabled) {
     const KEY = /^[A-Z][A-Z0-9]+-\d+$/;
     req(typeof j.project === "string" && /^[A-Z][A-Z0-9]+$/.test(j.project), "jira.project must be a Jira project key when jira.enabled");
-    req(!j.epics || Object.values(j.epics).every(v => KEY.test(v || "")), "jira.epics values must be issue keys (PROJ-123)");
+    const legacy = j.epics_legacy || j.epics;
+    req(!legacy || Object.values(legacy).every(v => KEY.test(v || "")), "jira.epics_legacy values must be issue keys (PROJ-123)");
+    const ep = j.epic || {};
+    const okPattern = p => typeof p === "string" && /\{Q\}/.test(p) && /\{YYYY\}|\{YY\}/.test(p);
+    req(!ep.namePattern || okPattern(ep.namePattern), "jira.epic.namePattern must contain {Q} and {YYYY} (for example \"BUG Q{Q} {YYYY}\")");
+    req(!ep.byType || Object.values(ep.byType).every(okPattern), "jira.epic.byType patterns must contain {Q} and {YYYY}");
+    req(!ep.onMissing || ["skip", "create-without-epic"].includes(ep.onMissing), "jira.epic.onMissing must be skip or create-without-epic");
+    warn(ep.namePattern || legacy, "no jira.epic.namePattern and no jira.epics_legacy: tickets will be created without an epic");
     req(Array.isArray(j.labels) && j.labels.length > 0, "jira.labels must list at least one label");
     req(Array.isArray(j.createFor) && j.createFor.length > 0, "jira.createFor must list at least one classification");
     req(["webhook", "mcp", "none"].includes(j.createVia || "none"), "jira.createVia must be webhook | mcp | none");
