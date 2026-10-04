@@ -5,7 +5,8 @@
 //   node scripts/post.mjs plan  --team remex --report report.json --context context.json [--dry-run]
 //       → { items: [ {kind:"thread", channel_id, thread_ts, text} , {kind:"team", channel_id, text} , {kind:"dm", user_id, text} ], refused: [] }
 //   node scripts/post.mjs check --team remex --channel C… [--thread-ts ts]        # exit 0 if that target is allowed, 6 otherwise
-//   node scripts/post.mjs mark  --team remex --ts <cand ts> --status posted --thread-ts <ts> --reply-ts <ts> [--team-ts <ts>] [--classification x] [--ticket KEY]
+//   node scripts/post.mjs mark  --team remex --ts <cand ts> --status posted --thread-ts <ts> --reply-ts <ts> [--team-ts <ts>] [--classification x]
+//                               [--ticket KEY --error-id <id> --service <name> --signature "<exception>"]   # these three feed jira.mjs local dedupe
 //
 // Allowed targets, and nothing else: the candidate's own thread in a configured source channel, output.teamChannelId,
 // output.dmUserIds. reply_broadcast is never allowed. A refused target is listed, never silently dropped.
@@ -63,6 +64,9 @@ function main() {
     if (opt["team-ts"]) entry.teamPostTs = opt["team-ts"];
     if (opt.classification) entry.classification = opt.classification;
     if (opt.ticket) entry.ticket = opt.ticket;
+    if (opt["error-id"]) entry.errorId = opt["error-id"];
+    if (opt.service) entry.service = opt.service;
+    if (opt.signature) entry.signature = opt.signature;
     if (opt.reason) entry.reason = opt.reason;
     return out(mark(cfg, opt.ts, entry));
   }

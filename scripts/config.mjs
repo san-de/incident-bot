@@ -128,6 +128,7 @@ export function validate(team) {
     req(!ep.namePattern || okPattern(ep.namePattern), "jira.epic.namePattern must contain {Q} and {YYYY} (for example \"BUG Q{Q} {YYYY}\")");
     req(!ep.byType || Object.values(ep.byType).every(okPattern), "jira.epic.byType patterns must contain {Q} and {YYYY}");
     req(!ep.onMissing || ["skip", "create-without-epic"].includes(ep.onMissing), "jira.epic.onMissing must be skip or create-without-epic");
+    req(!ep.pins || Object.entries(ep.pins).every(([k, v]) => /^Q[1-4] \d{4}$/.test(k) && KEY.test(v || "")), "jira.epic.pins must map \"Q<n> <year>\" to an issue key (PROJ-123)");
     warn(ep.namePattern || legacy, "no jira.epic.namePattern and no jira.epics_legacy: tickets will be created without an epic");
     req(Array.isArray(j.labels) && j.labels.length > 0, "jira.labels must list at least one label");
     req(Array.isArray(j.createFor) && j.createFor.length > 0, "jira.createFor must list at least one classification");

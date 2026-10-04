@@ -83,7 +83,8 @@
       "_comment": "One epic per quarter, resolved by name from the alert date: {Q} = 1..4, {YYYY} = year. BUG Q4 2026 now, BUG Q1 2027 from January. The team creates the next quarter epic; onMissing skip means no ticket is filed until it exists (the thread reply says so).",
       "namePattern": "REPLACE BUG Q{Q} {YYYY}",
       "byType": {},
-      "onMissing": "skip"
+      "onMissing": "skip",
+      "pins": {}
     },
     "epics_legacy": {
       "bug": "REPLACE_PROJECT-0000",

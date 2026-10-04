@@ -81,7 +81,10 @@
       "byType": {
         "Task": "TECH Q{Q} {YYYY}"
       },
-      "onMissing": "skip"
+      "onMissing": "skip",
+      "pins": {
+        "Q4 2026": "FIX-500"
+      }
     },
     "epics_legacy": {
       "bug": "FIX-1",

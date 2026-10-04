@@ -19,6 +19,13 @@
       "_note": "Second dedupe line: the idempotency key is written into the description, so a retried webhook finds the ticket it already created."
     },
     {
+      "id": "search_dupes",
+      "type": "action",
+      "action": "jira.search",
+      "inputs": { "jql": "{{trigger.body.payload.dedupe_jql}}", "maxResults": 3, "fields": "key,summary,status" },
+      "_note": "Third dedupe line: same error.id / signature / service, not Done, last 30 days. Any hit → return it instead of creating."
+    },
+    {
       "id": "find_epic",
       "type": "action",
       "action": "jira.search",
@@ -33,8 +40,8 @@
     {
       "id": "already",
       "type": "branch",
-      "condition": "{{steps.search.output.total}} > 0",
-      "then": [ { "id": "return_existing", "type": "code", "code": "return { created: false, key: steps.search.output.issues[0].key, reason: 'exists' };" } ],
+      "condition": "{{steps.search.output.total}} > 0 or {{steps.search_dupes.output.total}} > 0",
+      "then": [ { "id": "return_existing", "type": "code", "code": "const byKey = (steps.search.output.issues || [])[0]; const dup = (steps.search_dupes.output.issues || [])[0]; const hit = byKey || dup; return { created: false, key: hit.key, reason: byKey ? 'idempotency-key' : 'duplicate', status: hit.fields && hit.fields.status ? hit.fields.status.name : null };" } ],
       "else": [
         {
           "id": "create",

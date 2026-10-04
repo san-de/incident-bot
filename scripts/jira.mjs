@@ -6,6 +6,7 @@
 //   createVia: "none"    → classify and prepare only
 //
 //   node scripts/jira.mjs classify --team remex --report report.json
+//   node scripts/jira.mjs local    --team remex --context context.json [--report report.json] [--days 30]   # tickets this bot already filed (ledger)
 //   node scripts/jira.mjs jql      --team remex --report report.json --context context.json
 //   node scripts/jira.mjs epic     --team remex [--type Bug|Task] [--context context.json | --at 2026-10-04T08:00:00Z]   # quarterly epic name + JQL
 //   node scripts/jira.mjs payload  --team remex --report report.json --context context.json [--labels a,b] [--type Bug|Task] [--epic-key REMEX-123]
@@ -65,14 +66,38 @@ export function epicRule(cfg, type, atIso) {
   const pattern = (e.byType || {})[type] || e.namePattern || null;
   const staticKey = (j.epics_legacy || j.epics || {})[type === "Bug" ? "bug" : "tech-improvement"] || null;
   if (!pattern) return { mode: staticKey ? "static" : "none", epic_key: staticKey, epic_name: null, epic_jql: null, on_missing: null };
-  const { q, year } = quarterOf(atIso);
+  const { q, year, label } = quarterOf(atIso);
   const name = pattern.replace(/\{Q\}/g, String(q)).replace(/\{YYYY\}/g, String(year)).replace(/\{YY\}/g, String(year).slice(-2));
+  // A pinned key for this quarter wins over the name search (jira.epic.pins: { "Q4 2026": "REMEX-3028" }).
+  const pinned = (e.pins || {})[label] || null;
+  if (pinned) return { mode: "pinned", quarter: label, epic_key: pinned, epic_name: name, epic_jql: null, on_missing: null, note: `epic pinned for ${label}; no search needed` };
   return {
+    quarter: label,
     mode: "by-name", epic_key: null, epic_name: name,
     epic_jql: `project = ${j.project} AND issuetype = Epic AND summary ~ "\\"${name.replace(/"/g, "")}\\"" ORDER BY created DESC`,
     on_missing: e.onMissing || "skip",
     note: `resolve the epic key by running epic_jql; exact summary match wins; ${e.onMissing === "create-without-epic" ? "no match → create the ticket without an epic and record the gap" : "no match → do not create; report that the epic is missing"}`,
   };
+}
+
+/**
+ * Local dedupe: tickets this bot already filed, from the ledger. Matches the same Slack thread, the same error.id, or the
+ * same exception signature (first token before ":") within `days`. Runs before any Jira search and needs no credential.
+ */
+export function localDuplicates(ledger, ctx, report, days = 30) {
+  const since = Date.now() - days * 864e5;
+  const sig = String((report && report.kibana && report.kibana.signature) || ctx.signature_hint || "").split(":")[0].trim().toLowerCase();
+  const dups = [];
+  for (const [ts, e] of Object.entries((ledger && ledger.processed) || {})) {
+    if (!e.ticket) continue;
+    if (e.processedAt && Date.parse(e.processedAt) < since) continue;
+    const matches = [];
+    if (e.threadTs && e.threadTs === ctx.thread_ts) matches.push("thread");
+    if (ctx.error_id && e.errorId && e.errorId === ctx.error_id) matches.push("error.id");
+    if (sig && e.signature && String(e.signature).split(":")[0].trim().toLowerCase() === sig && (!e.service || !ctx.service_name || e.service === ctx.service_name)) matches.push("signature");
+    if (matches.length) dups.push({ ticket: e.ticket, ts, threadTs: e.threadTs || null, match: matches, processedAt: e.processedAt || null });
+  }
+  return dups;
 }
 
 export function proposeLabels(cfg, ctx, extra) {
@@ -98,6 +123,7 @@ export function buildPayload(cfg, report, ctx, opts = {}) {
       count: (report.kibana || {}).count ?? null, kibana_link: (ctx.links || {}).kibana || null, slack_permalink: ctx.permalink || null,
       suspects: ((report.git || {}).suspects || []).map(s => `${s.ref} ${s.title}`), next_action: report.next_action || "" },
     description_text: desc, idempotency_key: `incident-bot:${cfg.team}:${ctx.thread_ts}`,
+    dedupe_jql: dedupeJql(cfg, report, ctx).jql, error_id: ctx.error_id || null,
     source: { team: cfg.team, thread_ts: ctx.thread_ts, channel_id: ctx.channel_id, classification: report.classification, decided_by: opts.type ? "override" : cls.decided_by },
   };
   return payload;
@@ -134,6 +160,13 @@ async function main() {
   try {
     if (cmd === "classify") return out(classify(readJson(opt.report), cfg));
     if (cmd === "jql") return out(dedupeJql(cfg, readJson(opt.report), readJson(opt.context), Number(opt.days || 30)));
+    if (cmd === "local") {
+      if (!opt.context) fail("jira", "local needs --context", EXIT.USAGE);
+      const { readJsonIf } = await import("./lib/io.mjs");
+      const ledger = readJsonIf(cfg.ledgerPath, { processed: {} });
+      const dups = localDuplicates(ledger, readJson(opt.context), opt.report ? readJson(opt.report) : null, Number(opt.days || 30));
+      return out({ duplicates: dups, create_allowed: dups.length === 0, source: cfg.ledgerPath });
+    }
     if (cmd === "epic") { const ctx = opt.context ? readJson(opt.context) : {}; return out(epicRule(cfg, opt.type || "Bug", opt.at || ctx.message_time_utc || (ctx.window_utc || {}).to)); }
     if (cmd === "payload") return out(buildPayload(cfg, readJson(opt.report), readJson(opt.context), { labels: opt.labels, type: opt.type, priority: opt.priority, epicKey: opt["epic-key"] }));
     if (cmd === "create") {
@@ -143,7 +176,7 @@ async function main() {
       if (via === "mcp") return out({ accepted: false, via: "mcp", instruction: "call the Atlassian create-issue tool with this payload; then post.mjs mark --ticket <KEY>", payload });
       return out({ accepted: false, via: "none", instruction: "jira.createVia is none; nothing created", payload });
     }
-    fail("jira", "usage: jira.mjs classify|jql|epic|payload|create …", EXIT.USAGE);
+    fail("jira", "usage: jira.mjs classify|local|jql|epic|payload|create …", EXIT.USAGE);
   } catch (e) { fail("jira", e.message, EXIT.ERROR); }
 }
 
