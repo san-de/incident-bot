@@ -77,6 +77,6 @@ under Integrations → Elastic; relink Slack when it expires.
 | `⛔ … run could not start — config: …` | team config invalid at that tag | fix config, release |
 | Runs end with `Slack search tool missing` | agent has no Slack MCP or the Slack link expired | relink Slack; check the agent's `mcpBindings.slack` |
 | `kibana: none` in preflight gaps | no Elastic key for the runner | save the key in Integrations or on the service account |
-| Thread replies fail, team posts carry the full analysis | runner cannot post into the source channel | the runner (bot) must be a member of the channel |
+| Thread replies fail, team posts carry the full analysis (`team-only`) | the source channel is Slack Connect (externally shared) and the runner's Slack identity may not post there — seen live 2026-10-04 on #bot_rota, first triage-one run | give the posting identity rights in the shared channel (workspace admin), or run as a service account whose bot is invited to #bot_rota; until then the full analysis lands in the team channel by design |
 | Watchdog says `not starting` | every run under 60 s | read the latest run's transcript; usually the clone |
 | Task shows `timed_out` runs | > 2 h per run | lower `poll.maxPerRun`; check Kibana latency |
