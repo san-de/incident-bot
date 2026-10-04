@@ -18,7 +18,7 @@ agent1.prod.apps.auto1.team with `fetch('/api/…', {credentials:'include'})`.
 | Workflow `incident-bot · jira-ticket` | `d25f765c-90b4-4513-b01d-aab1a3c7fcfe` |
 | Task `incident-bot · poll · remex` — hourly, **dry-run**, project san-de/incident-bot@main, notify on | `10da65be-3f6f-4323-8642-7c4a28915457` |
 | Task `incident-bot · watchdog · remex` — daily 08:30 Berlin | `53b49a97-bcc5-4137-8cc0-76c416740bc6` |
-| Previous bot: task `rota-triage · remex` (still scheduled hourly; pause it once the dry run is trusted) | `b776259b-049b-4692-ba15-e7fa61e42df4` |
+| Previous bot: task `rota-triage · remex` — schedule **paused 2026-10-04 18:0x UTC** after 319 runs, $178 total; re-enable only to compare | `b776259b-049b-4692-ba15-e7fa61e42df4` |
 
 ## Objects per team
 
