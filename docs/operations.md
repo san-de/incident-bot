@@ -35,7 +35,7 @@ agent1.prod.apps.auto1.team with `fetch('/api/…', {credentials:'include'})`.
 
 - Ledger: `node scripts/ledger.mjs status --team <team>` (locally `~/.claude/incident-bot/<team>/ledger.json`; on Agent1 `/app/task-context/incident-bot/<team>/ledger.json` from inside a task).
 - Task and runs: `agent1/bootstrap.sh status <taskId>`: schedule state, next run, last runs with status, cost and duration.
-- Reading durations: ~25 s and ~$0.13 means the run stopped before Phase 1 (clone or guard). 3 to 5 minutes is an empty poll. Over $0.50 means candidates were analysed.
+- Reading runs: an empty poll (clone, guard, Slack search, 0 candidates) takes about 40 s and $0.20 to $0.28, measured 2026-10-04. A run that stopped at the guard is about 25 s and $0.13, which is too close to tell apart by numbers alone: read the run result (`⛔ … could not start` vs `no new tags for <team>`). Candidates analysed: minutes and over $0.50.
 - Team channel: every handled alert produces one post; a `⛔ incident-bot <team>: run could not start` line means the guard stopped a run; a `🩺` line comes from the watchdog.
 
 ## Pause, resume, run now
