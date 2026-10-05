@@ -47,6 +47,10 @@ agent1/bootstrap.sh enable  <taskId>
 agent1/bootstrap.sh run-now <taskId>
 ```
 
+## Restart a blocked workflow step
+
+Use **one** of: `POST /api/tasks/:id/answer` (resumes the blocked session in place, with its workspace) **or** `POST /api/tasks/:id/start-step` (fresh session). Doing both, as on 2026-10-05, runs two sessions for the same step; the Jira idempotency key kept it to one ticket (REMEX-3049), but do not rely on that. Prefer `answer` when the fix was a credential (the resumed session retries the clone); prefer `start-step` when the step never produced a session.
+
 ## Re-triage a thread, backfill
 
 The watermark only moves forward. To re-process something, run a one-off task (or locally) with an explicit scope:

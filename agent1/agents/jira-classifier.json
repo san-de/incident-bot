@@ -1,5 +1,5 @@
 {
-  "_comment": "Workflow-step agent for the Jira read-only part (classify, dedupe, labels). Creation happens in the next step after a person confirmed.",
+  "_comment": "Workflow-step agent for the Jira read-only part (classify, dedupe, labels). Creation happens in the next step after a person confirmed. Slack is attached so the step can post the ticket key into the alert thread / team channel (needs the workspace binding, copied from incident-bot at creation).",
   "name": "incident-bot-jira-classifier",
   "displayName": "incident-bot · jira-classifier",
   "description": "Chunk 8 of incident-bot, read-only: should a ticket exist, which existing one does it duplicate, Bug or Task, which labels. Creates nothing.",
@@ -14,7 +14,8 @@
     "Read"
   ],
   "mcpServerNames": [
-    "atlassian"
+    "atlassian",
+    "slack"
   ],
   "selectedPlugins": [],
   "selectedSkillNames": [
