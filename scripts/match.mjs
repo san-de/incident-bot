@@ -21,7 +21,7 @@ import { readJsonIf } from "./lib/io.mjs";
 import { resolve, pickTeam } from "./config.mjs";
 import { HANDLED } from "./ledger.mjs";
 
-const KIBANA = /https?:\/\/kibana\.[a-z0-9.-]+\/app\/(discover|r\b|r\/s\/|kibana#\/discover)/;
+const KIBANA = /https?:\/\/kibana\.[a-z0-9.-]+\/(app\/(discover|r\b|r\/s\/|kibana#\/discover)|goto\/[A-Za-z0-9_-]+)/;
 const SRE = /\[(SRE\d{4})\]/;
 
 export function unescape(t) { return String(t || "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"); }

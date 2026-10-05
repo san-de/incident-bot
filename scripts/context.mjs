@@ -32,10 +32,10 @@ export function extractFacts(thread) {
   const facts = { service: null, errorId: null, traceId: null, title: null, links: {}, deploy: null, jira: null, frames: [], exception: null };
   for (const m of thread) {
     const t = unesc(m.text);
-    const det = t.match(/Detected for:\s*\*?([a-z0-9.-]+)\*?/i); if (det && !facts.service) facts.service = det[1];
+    const det = t.match(/Detected for:\s*\*?([a-z0-9.-]+)\*?/i) || t.match(/Service name:\s*\*?([a-z0-9.-]+)\*?/i); if (det && !facts.service) facts.service = det[1];
     const eid = t.match(/Error id:\s*\*?([0-9a-f]{6,})\*?/i); if (eid && !facts.errorId) facts.errorId = eid[1];
     const tid = t.match(/trace\.id[`: *]+([0-9a-f]{12,})/i); if (tid && !facts.traceId) facts.traceId = tid[1];
-    const ttl = t.match(/\[(SRE\d{4})\]:?\s*([^|\n*]+)/); if (ttl && !facts.title) facts.title = ttl[2].trim().slice(0, 140);
+    const ttl = t.match(/\[(SRE\d{4})\]:?\s*([^|\n*]+)/) || t.match(/^\s*'([^'\n]{4,120})'/); if (ttl && !facts.title) facts.title = (ttl[2] || ttl[1]).trim().slice(0, 140);
     if (/Last deployment/i.test(t) && !facts.deploy) {
       const line = (t.split("\n").find(l => /Last deployment/i.test(l)) || t);
       const ago = (line.match(/(\d+\s*(?:minutes?|hours?|days?)\s*ago)/i) || [])[1] || null;

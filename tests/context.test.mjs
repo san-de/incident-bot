@@ -32,6 +32,14 @@ test("context: service, error id, window from the link, deploy anchor from the S
   assert.equal(ctx.thread_excerpt.length, 4);
 });
 
+test("context: QA-style alert yields service from 'Service name:' and a quoted title", async () => {
+  const { extractFacts } = await import("../scripts/context.mjs");
+  const f = extractFacts([{ ts: "1790000700.000700", user: "UALERTBOT", text: "'REM - ERROR rate - QA'\n\n<!subteam^S0FIXTURE01|fixture-be>\n\nDetails:\n- Timestamp: 2026-10-05T10:47:04.052Z\n- Hits: 1\nService name: remarketing-car\n<https://kibana.qa.services.auto1.team/goto/41e8286320510f7a3a82a425b842ad67|Kibana Discover Link>" }]);
+  assert.equal(f.service, "remarketing-car");
+  assert.equal(f.title, "REM - ERROR rate - QA");
+  assert.match(f.links.kibana, /kibana\.qa\./);
+});
+
 test("context: fallback window when no link resolves, capped at maxWindowHours", async () => {
   const { resolve } = await import("../scripts/config.mjs");
   const { buildContext } = await import("../scripts/context.mjs");

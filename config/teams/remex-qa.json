@@ -1,0 +1,111 @@
+{
+  "_comment": "REMEX QA alerts: 'REM - ERROR rate - QA' style messages in #qa-inci-rem that tag @remexoftheday. Kibana env is qa; on the PROD Agent1 deployment the kibana plugin agent only reaches PROD, so log evidence comes from kibana.mjs with a QA key if one is saved, otherwise it is a declared gap.",
+  "version": 1,
+  "team": "remex-qa",
+  "displayName": "REMEX QA alerts",
+  "enabled": true,
+  "owner": {
+    "name": "ashish.ranjan",
+    "slackUserId": "U0B4N3ZPRFE"
+  },
+  "agent1": {
+    "agentId": "34c99c2a-7069-4ec0-b8ea-184ce2dff1b0",
+    "watchdogAgentId": "c471d1cd-da07-4989-8435-d8aee46ed185",
+    "boardId": "7c0842d9-8a01-4e69-a046-70d46a43a2a2",
+    "runAs": "ashish.ranjan",
+    "serviceAccount": null
+  },
+  "slack": {
+    "workspaceUrl": "https://wkda-eng.slack.com",
+    "channels": [
+      {
+        "id": "CFZKXQK55",
+        "name": "qa-inci-rem"
+      }
+    ],
+    "searchTerms": [
+      "remexoftheday"
+    ],
+    "subteamIds": [
+      "S044K2A4256"
+    ],
+    "ignoreSubteamIds": []
+  },
+  "output": {
+    "threadReply": true,
+    "teamChannelId": "C0C6T2RK673",
+    "teamChannelName": "remex-bot-alerts",
+    "dmUserIds": [],
+    "dryRun": false,
+    "signature": "🤖 automated triage by incident-bot on behalf of @remexoftheday — a human from the team will follow up; reply here if this is wrong",
+    "maxChars": 3500
+  },
+  "kibana": {
+    "env": "qa",
+    "baseUrl": "https://kibana.qa.services.auto1.team",
+    "askTool": "ask_app_debugging",
+    "perfTool": "ask_performance",
+    "maxWindowHours": 6,
+    "fallbackWindowMinutes": 30
+  },
+  "github": {
+    "orgs": [
+      "wkda"
+    ],
+    "cloneDepth": 200,
+    "localRepoRoots": [],
+    "lookbackHours": 48
+  },
+  "services": {
+    "file": "config/services.json",
+    "overlay": "services.local.json"
+  },
+  "poll": {
+    "cron": "0 * * * *",
+    "sinceFallbackMinutes": 75,
+    "firstRunLookbackHours": 1,
+    "searchLagMinutes": 10,
+    "maxPerRun": 5,
+    "timeBudgetMinutes": 45
+  },
+  "skip": {
+    "olderThanHours": 48,
+    "nonAlertMentions": true,
+    "alertCodes": []
+  },
+  "knownNoise": [],
+  "jira": {
+    "enabled": true,
+    "siteUrl": "https://wkdauto.atlassian.net",
+    "project": "REMEX",
+    "epic": {
+      "_comment": "QA bugs go to the quarter's QA epic: Q4 2026 is pinned to REMEX-3050 (Bug QA Q4 2026); later quarters by name, created if missing.",
+      "namePattern": "Bug QA Q{Q} {YYYY}",
+      "byType": {},
+      "pins": {
+        "Q4 2026": "REMEX-3050"
+      },
+      "onMissing": "create-epic"
+    },
+    "issueTypes": {
+      "bug": "Bug",
+      "tech-improvement": "Task"
+    },
+    "labels": [
+      "incident-bot",
+      "qa"
+    ],
+    "_labelsNote": "agent-one is deliberately not a default label: the REMEX board sync rule turns every agent-one ticket into an Agent1 dev task.",
+    "createFor": [
+      "new after deploy",
+      "pre-existing, grew",
+      "infra",
+      "upstream dependency"
+    ],
+    "board": {
+      "id": "7c0842d9-8a01-4e69-a046-70d46a43a2a2",
+      "syncRule": "REMEX agent-one"
+    },
+    "createVia": "mcp"
+  }
+}

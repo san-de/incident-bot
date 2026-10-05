@@ -4,7 +4,7 @@
 //
 //   node scripts/links.mjs discover '<discover url>' [anchor-iso]      # rison parse, no network
 //   node scripts/links.mjs lz '<locator url or lz value>'              # lz-string decode, no network
-//   node scripts/links.mjs short '<short url or slug>' [--env prod]    # Kibana short-URL API, read-only, key never printed
+//   node scripts/links.mjs short '<short url or slug>' [--env prod]    # Kibana short-URL API (/app/r/s/<id> or /goto/<id>), read-only, key never printed
 //   node scripts/links.mjs resolve '<any kibana url>' [anchor-iso] [--env prod]   # picks the shape, follows short → discover
 //
 // Exit codes: 0 ok · 1 undecodable · 2 no key / usage · 3 unreachable · 4 auth · 5 unknown slug.
@@ -222,7 +222,7 @@ export function fromLocatorState(state, anchorIso) {
 // ---------- short url ----------
 export async function resolveShort(target, env = "prod") {
   const clean = String(target).replace(/&amp;/g, "&").replace(/^<|>$/g, "").split("|")[0];
-  const m = clean.match(/\/app\/r\/s\/([A-Za-z0-9_-]+)/) || clean.match(/^([A-Za-z0-9_-]{3,})$/);
+  const m = clean.match(/\/app\/r\/s\/([A-Za-z0-9_-]+)/) || clean.match(/\/goto\/([A-Za-z0-9_-]+)/) || clean.match(/^([A-Za-z0-9_-]{3,})$/);
   if (!m) return { error: "not a short link", code: EXIT.USAGE };
   const id = m[1];
   const key = resolveElasticKey(env);
@@ -247,7 +247,7 @@ export async function resolveShort(target, env = "prod") {
 /** Any Kibana link → window/filters. Network only for short links. */
 export async function resolveAny(raw, anchorIso, env = "prod") {
   const url = unslack(raw);
-  if (/\/app\/r\/s\//.test(url)) {
+  if (/\/app\/r\/s\/|\/goto\//.test(url)) {
     const s = await resolveShort(url, env);
     if (s.error) return { shape: "short", error: s.error, code: s.code };
     if (s.embeddedUrl) return Object.assign(parseDiscover(s.embeddedUrl, anchorIso), { via: "short", resolvedUrl: s.resolvedUrl });

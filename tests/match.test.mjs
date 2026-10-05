@@ -25,6 +25,18 @@ test("match applies the rules in order and caps at maxPerRun", async () => {
   assert.match(reasons["1789000000.000000"], /stale/);
 });
 
+test("match accepts a QA-style alert: tag in the parent message, no SRE code, a Kibana goto link", async () => {
+  const { resolve } = await import("../scripts/config.mjs");
+  const { matchCandidates } = await import("../scripts/match.mjs");
+  const cfg = resolve("fixture");
+  const hits = { hits: [{ ts: "1790000700.000700", threadTs: "1790000700.000700", channelId: "C0FIXTURE1", user: "UALERTBOT",
+    text: "'REM - ERROR rate - QA'\n\n<!subteam^S0FIXTURE01|fixture-be>\n\nDetails:\n- Timestamp: 2026-10-05T10:47:04.052Z\n- Hits: 1\nService name: remarketing-car\n<https://kibana.qa.services.auto1.team/goto/41e8286320510f7a3a82a425b842ad67|Kibana Discover Link>" }], threads: {} };
+  const r = matchCandidates(cfg, { processed: {}, repliedThreads: {} }, hits, 1790001000);
+  assert.equal(r.candidates.length, 1);
+  assert.equal(r.candidates[0].alertCode, null);
+  assert.match(r.candidates[0].kibanaLinks[0], /goto\/41e8/);
+});
+
 test("match skips threads the ledger or the signature already covers", async () => {
   const { resolve } = await import("../scripts/config.mjs");
   const { matchCandidates } = await import("../scripts/match.mjs");
