@@ -35,12 +35,14 @@
   },
   "output": {
     "threadReply": true,
-    "teamChannelId": "C03ARLX6HUJ",
-    "teamChannelName": "team-remex-be",
+    "teamChannelId": "C0C6T2RK673",
+    "teamChannelName": "remex-bot-alerts",
     "dmUserIds": [],
     "dryRun": false,
     "signature": "🤖 automated triage by rota-triage on behalf of @remex-be — a human from the team will follow up; reply here if this is wrong",
-    "maxChars": 3500
+    "maxChars": 3500,
+    "previousTeamChannelId": "C03ARLX6HUJ",
+    "previousTeamChannelName": "team-remex-be"
   },
   "kibana": {
     "env": "prod",
