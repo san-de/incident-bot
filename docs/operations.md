@@ -18,6 +18,8 @@ agent1.prod.apps.auto1.team with `fetch('/api/…', {credentials:'include'})`.
 | Workflow `incident-bot · jira-ticket` | `d25f765c-90b4-4513-b01d-aab1a3c7fcfe` |
 | Task `incident-bot · poll · remex` — hourly, **live since 2026-10-05 (dry-run flag removed from the task description in place, ledger kept)**, project san-de/incident-bot@main, notify on; team channel #remex-bot-alerts `C0C6T2RK673` | `10da65be-3f6f-4323-8642-7c4a28915457` |
 | Task `incident-bot · watchdog · remex` — daily 08:30 Berlin | `53b49a97-bcc5-4137-8cc0-76c416740bc6` |
+| Task `incident-bot · poll · remex-qa` — hourly, **dry-run**, #qa-inci-rem `CFZKXQK55` / @remexoftheday `S044K2A4256`, Kibana QA, output #remex-bot-alerts, epic Bug QA Q4 2026 → REMEX-3050 (created 2026-10-05) | `24c9ae01-42fe-471e-98e7-4bf55b4d4c26` |
+| Task `incident-bot · watchdog · remex-qa` — daily 08:35 Berlin | `eb8bb2a4-8092-46f8-a642-72c2cfb69588` |
 | Previous bot: task `rota-triage · remex` — schedule **paused 2026-10-04 18:0x UTC** after 319 runs, $178 total; re-enable only to compare | `b776259b-049b-4692-ba15-e7fa61e42df4` |
 
 ## Objects per team
