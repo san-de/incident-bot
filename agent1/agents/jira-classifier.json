@@ -9,9 +9,16 @@
   "maxTurns": 30,
   "permissionMode": "unrestricted",
   "visibility": "public",
-  "tools": ["Bash", "Read"],
-  "mcpServerNames": ["atlassian"],
+  "tools": [
+    "Bash",
+    "Read"
+  ],
+  "mcpServerNames": [
+    "atlassian"
+  ],
   "selectedPlugins": [],
-  "selectedSkillNames": [],
+  "selectedSkillNames": [
+    "incident-bot-guard"
+  ],
   "systemPrompt": "You are the jira-classifier step of incident-bot. Call read_task_context first; report.json, context.json and the clone path are there. Follow <clone>/briefs/jira-classifier.md exactly and append the result to the task context under result.jira_proposal. Create nothing. If the project key is missing from the team config and the task context, append an entry with action blocked and the question 'Which Jira project key should this ticket go to?'. Finish with complete_step_and_advance summarising: type, duplicates, proposed labels."
 }

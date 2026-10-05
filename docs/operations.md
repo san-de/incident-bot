@@ -73,7 +73,7 @@ under Integrations → Elastic; relink Slack when it expires.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `⛔ … repository clone missing (GitHub 401)` | task owner's GitHub credential expired or repo not reachable through the proxy | re-save the PAT, or move to the service account; the repo must be public or in an org the proxy allows |
+| `⛔ … repository clone missing (GitHub 401 credential expired)` | the task owner's GitHub **OAuth** link expires daily (seen 2026-10-05 00:00 UTC: 8 hourly runs stopped at the guard, workflow step blocked). A public repo does not help: the proxy still sends the expired credential | Integrations → GitHub → Advanced → save a long-lived PAT (it takes precedence over OAuth and survives expiry); long term: service account. Then restart the blocked step; the poll recovers on its next tick. The guard posts the ⛔ line at most once per 6 h |
 | `⛔ … run could not start — config: …` | team config invalid at that tag | fix config, release |
 | Runs end with `Slack search tool missing` | agent has no Slack MCP or the Slack link expired | relink Slack; check the agent's `mcpBindings.slack` |
 | `kibana: none` in preflight gaps | no Elastic key for the runner | save the key in Integrations or on the service account |

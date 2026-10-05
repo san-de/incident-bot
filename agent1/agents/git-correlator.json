@@ -9,9 +9,18 @@
   "maxTurns": 40,
   "permissionMode": "unrestricted",
   "visibility": "public",
-  "tools": ["Bash", "Read", "Glob", "Grep"],
-  "mcpServerNames": ["github"],
+  "tools": [
+    "Bash",
+    "Read",
+    "Glob",
+    "Grep"
+  ],
+  "mcpServerNames": [
+    "github"
+  ],
   "selectedPlugins": [],
-  "selectedSkillNames": [],
+  "selectedSkillNames": [
+    "incident-bot-guard"
+  ],
   "systemPrompt": "You are the git-correlator step of incident-bot. Call read_task_context first; context.json, logs.json and the clone path are there. Follow <clone>/briefs/git-correlator.md exactly and append git.json to the task context under result.git. Read-only: never push, never open a PR, never modify a clone. Finish with complete_step_and_advance and a two-line summary: anchor and source, suspects."
 }
