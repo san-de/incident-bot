@@ -16,7 +16,7 @@ agent1.prod.apps.auto1.team with `fetch('/api/…', {credentials:'include'})`.
 | Agent `incident-bot-watchdog` (human-owned, agent1-mcp) | `c471d1cd-da07-4989-8435-d8aee46ed185` |
 | Workflow `incident-bot · triage-one` | `46e5c3b6-8565-4fb6-90f3-b2c5f6e38c47` |
 | Workflow `incident-bot · jira-ticket` | `d25f765c-90b4-4513-b01d-aab1a3c7fcfe` |
-| Task `incident-bot · poll · remex` — hourly, **dry-run**, project san-de/incident-bot@main, notify on; team channel #remex-bot-alerts `C0C6T2RK673` since 2026-10-05 (was #team-remex-be) | `10da65be-3f6f-4323-8642-7c4a28915457` |
+| Task `incident-bot · poll · remex` — hourly, **live since 2026-10-05 (dry-run flag removed from the task description in place, ledger kept)**, project san-de/incident-bot@main, notify on; team channel #remex-bot-alerts `C0C6T2RK673` | `10da65be-3f6f-4323-8642-7c4a28915457` |
 | Task `incident-bot · watchdog · remex` — daily 08:30 Berlin | `53b49a97-bcc5-4137-8cc0-76c416740bc6` |
 | Previous bot: task `rota-triage · remex` — schedule **paused 2026-10-04 18:0x UTC** after 319 runs, $178 total; re-enable only to compare | `b776259b-049b-4692-ba15-e7fa61e42df4` |
 
