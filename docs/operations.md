@@ -36,6 +36,8 @@ agent1.prod.apps.auto1.team with `fetch('/api/…', {credentials:'include'})`.
 
 ## See what the bot did
 
+- Ledger files live on each poll task's volume, outside the repo: `/app/task-context/incident-bot/remex/ledger.json` (task 10da65be) and `/app/task-context/incident-bot/remex-qa/ledger.json` (task 24c9ae01); `memory.md` is one level up at `/app/task-context/memory.md`. They are reachable only from a session of that task: the session file browser and `GET /api/sessions/:id/file-content` serve project files only (403 outside). Open the latest run session and run `node incident-bot/scripts/ledger.mjs status --team <team>`, or ask the agent to copy the file into `./context/` for the file browser. Opening a hibernated session resumes it, and the scheduler skips the next tick while a session is active, so close it afterwards.
+
 - Ledger: `node scripts/ledger.mjs status --team <team>` (locally `~/.claude/incident-bot/<team>/ledger.json`; on Agent1 `/app/task-context/incident-bot/<team>/ledger.json` from inside a task).
 - Task and runs: `agent1/bootstrap.sh status <taskId>`: schedule state, next run, last runs with status, cost and duration.
 - Reading runs: an empty poll (clone, guard, Slack search, 0 candidates) takes about 40 s and $0.20 to $0.28, measured 2026-10-04. A run that stopped at the guard is about 25 s and $0.13, which is too close to tell apart by numbers alone: read the run result (`⛔ … could not start` vs `no new tags for <team>`). Candidates analysed: minutes and over $0.50.

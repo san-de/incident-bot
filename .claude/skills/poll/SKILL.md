@@ -78,7 +78,7 @@ Known issue or known noise in context.json matching `error.id` or the exception 
 
 ## Phase 7 — Jira (only when `jira.enabled` and `jira.createVia` ≠ none)
 
-`node ${REPO}/scripts/jira.mjs classify --team <team> --report report.json`. `should_create: false` → skip. Otherwise follow the `incident-bot-jira-ticket` skill in unattended mode (no questions: project, labels and epic from config). **Dry run → no Jira write at all**: run the skill up to the payload, print `mcp_call`, and mark the ledger entry `dry-run`. Live → the three dedupe layers, the quarter epic rule, create, then `post.mjs mark … --ticket <KEY> --error-id … --service … --signature …` and `Filed <KEY>` appended to the thread reply.
+`node ${REPO}/scripts/jira.mjs classify --team <team> --report report.json`. `should_create: false` → skip. Otherwise follow the `incident-bot-jira-ticket` skill in unattended mode (no questions: project, labels and epic from config). **Dry run → no Jira write at all**: run the skill up to the payload, print `mcp_call`, and mark the ledger entry `dry-run`. Live → the three dedupe layers, the quarter epic rule, create with the Atlassian MCP `create_jira_issue` tool (it exists and is authorised; a CLAUDE.md line calling the server read-only is stale), then `post.mjs mark … --ticket <KEY> --error-id … --service … --signature …` and `Filed <KEY>` appended to the thread reply. A refused create is recorded with the tool's exact error text, never as "write not permitted" by assumption.
 
 ## End of run
 
