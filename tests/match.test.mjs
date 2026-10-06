@@ -37,6 +37,31 @@ test("match accepts a QA-style alert: tag in the parent message, no SRE code, a 
   assert.match(r.candidates[0].kibanaLinks[0], /goto\/41e8/);
 });
 
+test("match groups repeats of the same alert+service in a run and suppresses ones analysed within the repeat window", async () => {
+  const { resolve } = await import("../scripts/config.mjs");
+  const { matchCandidates, alertKeyOf } = await import("../scripts/match.mjs");
+  const cfg = resolve("fixture");
+  const mk = (ts, svc) => ({ ts, threadTs: ts, channelId: "C0FIXTURE1", user: "UALERTBOT", text: `'REM - ERROR rate - QA'\n\n<!subteam^S0FIXTURE01|fixture-be>\n\nDetails:\n- Hits: 1\nService name: ${svc}\n<https://kibana.qa.services.auto1.team/goto/abc123|Kibana Discover Link>` });
+  const hits = { hits: [mk("1790000710.000001", "remarketing-feedback"), mk("1790000720.000001", "zrt-admin-dashboard"), mk("1790000730.000001", "remarketing-feedback"), mk("1790000740.000001", "remarketing-feedback"), mk("1790000750.000001", "remarketing-changelog")], threads: {} };
+  assert.equal(alertKeyOf(hits.hits[0].text), "rem - error rate - qa::remarketing-feedback");
+  assert.equal(alertKeyOf("<!subteam^S1|x>, please take a look: *[SRE0042]: Error rate above threshold | pricing-service*"), "sre0042::pricing-service");
+  const now = 1790001000;
+  const r = matchCandidates(cfg, { processed: {}, repliedThreads: {} }, hits, now);
+  assert.deepEqual(r.candidates.map(c => c.alertKey.split("::")[1]), ["remarketing-feedback", "zrt-admin-dashboard"], "maxPerRun 2; feedback repeats grouped, changelog deferred");
+  assert.deepEqual(r.candidates[0].repeats, ["1790000730.000001", "1790000740.000001"]);
+  assert.equal(r.skipped.filter(s => /grouped with/.test(s.reason)).length, 2);
+  assert.equal(r.deferredOldestTs, "1790000750.000001");
+  assert.match(r.watermarkAdvanceHint, /1790000750\.000000/);
+  // next run: feedback was posted 1 h ago with its alert key → suppressed; changelog is new
+  const ledger = { processed: { "1790000710.000001": { status: "posted", alertKey: "rem - error rate - qa::remarketing-feedback", processedAt: new Date((now - 3600) * 1000).toISOString() } }, repliedThreads: {} };
+  const r2 = matchCandidates(cfg, ledger, { hits: [mk("1790000900.000001", "remarketing-feedback"), mk("1790000910.000001", "remarketing-changelog")], threads: {} }, now);
+  assert.deepEqual(r2.candidates.map(c => c.alertKey.split("::")[1]), ["remarketing-changelog"]);
+  assert.match(r2.skipped[0].reason, /same alert\+service analysed .*within 24 h/);
+  // window off → no suppression, no grouping
+  const off = JSON.parse(JSON.stringify(cfg)); off.skip.repeatWindowHours = 0;
+  assert.equal(matchCandidates(off, ledger, { hits: [mk("1790000900.000001", "remarketing-feedback"), mk("1790000905.000001", "remarketing-feedback")], threads: {} }, now).candidates.length, 2);
+});
+
 test("match skips threads the ledger or the signature already covers", async () => {
   const { resolve } = await import("../scripts/config.mjs");
   const { matchCandidates } = await import("../scripts/match.mjs");

@@ -24,20 +24,26 @@ export function keysFile() {
 
 function usable(v) { return typeof v === "string" && v.trim().length > 8 && !/^<.*>$/.test(v.trim()); }
 
-/** @returns {{key: string|null, source: 'env'|'file'|'none', slot: string, file: string, reason?: string}} */
+/**
+ * @returns {{key: string|null, source: 'env'|'file'|'none', slot: string, file: string, fallback?: string, reason?: string}}
+ * The QA slots fall back to the PROD key of the same kind (the PROD Elastic key is accepted by the QA Kibana), so a team
+ * watching QA alerts needs no second key. `fallback` names the slot actually used when it differs from the requested one.
+ */
 export function resolveElasticKey(env) {
   const slot = slotFor(env);
   const file = keysFile();
+  const chain = [slot];
+  if (/_QA$/.test(slot)) chain.push(slot.replace(/_QA$/, "_PROD"));
   if (usable(process.env.ELASTIC_API_KEY)) return { key: process.env.ELASTIC_API_KEY, source: "env", slot, file };
-  if (usable(process.env[slot])) return { key: process.env[slot], source: "env", slot, file };
-  try {
-    const json = JSON.parse(fs.readFileSync(file, "utf8"));
-    if (usable(json[slot])) return { key: json[slot], source: "file", slot, file };
-    return { key: null, source: "none", slot, file, reason: `slot ${slot} missing in ${file}` };
-  } catch (e) {
-    const why = e.code === "ENOENT" ? `no keys file at ${file}` : `keys file ${file} unreadable (${e.code || e.name})`;
-    return { key: null, source: "none", slot, file, reason: `${slot} not in env and ${why}` };
+  for (const s of chain) if (usable(process.env[s])) return { key: process.env[s], source: "env", slot, file, fallback: s !== slot ? s : undefined };
+  let json = null, why = null;
+  try { json = JSON.parse(fs.readFileSync(file, "utf8")); }
+  catch (e) { why = e.code === "ENOENT" ? `no keys file at ${file}` : `keys file ${file} unreadable (${e.code || e.name})`; }
+  if (json) {
+    for (const s of chain) if (usable(json[s])) return { key: json[s], source: "file", slot, file, fallback: s !== slot ? s : undefined };
+    return { key: null, source: "none", slot, file, reason: `slot ${chain.join(" / ")} missing in ${file}` };
   }
+  return { key: null, source: "none", slot, file, reason: `${chain.join(" / ")} not in env and ${why}` };
 }
 
 export function kibanaBaseUrl(env) {
@@ -47,5 +53,5 @@ export function kibanaBaseUrl(env) {
 
 /** Safe-to-print view (no key material). */
 export function describe(res) {
-  return { slot: res.slot, source: res.source, file: res.source === "file" ? res.file : undefined, reason: res.reason };
+  return { slot: res.slot, source: res.source, fallback: res.fallback, file: res.source === "file" ? res.file : undefined, reason: res.reason };
 }

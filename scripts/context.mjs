@@ -28,6 +28,13 @@ export function lookupRepo(serviceName, catalogue, overlay) {
   return { repo: null, source: "none" };
 }
 
+/** Unmapped service → the name to try first when discovering the repo (wkda convention: <service>-service). Never trusted, only a hint. */
+export function repoGuess(serviceName, orgs = ["wkda"]) {
+  if (!serviceName) return [];
+  const base = serviceName.replace(/-service$/, "");
+  return orgs.flatMap(o => [`${o}/${base}-service`, `${o}/${base}`]);
+}
+
 export function extractFacts(thread) {
   const facts = { service: null, errorId: null, traceId: null, title: null, links: {}, deploy: null, jira: null, frames: [], exception: null };
   for (const m of thread) {
@@ -108,7 +115,9 @@ export async function buildContext(cfg, cand, thread, opts = {}) {
     error_id: (link && link.errorId) || facts.errorId || null, trace_id: (link && link.traceId) || facts.traceId || null,
     signature_hint: facts.exception ? `${facts.exception}${facts.frames[0] ? " at " + facts.frames[0] : ""}` : null, frames: facts.frames,
     window_utc: window, message_time_utc: msgIso, deploy_anchor: deploy,
-    repo: repo.repo, repo_source: repo.source, known_issues: (repo.entry && repo.entry.knownIssues) || [], known_noise: (repo.entry && repo.entry.knownNoise) || [],
+    repo: repo.repo, repo_source: repo.source, repo_guess: repo.repo ? [] : repoGuess(service, (cfg.github || {}).orgs),
+    alert_key: cand.alertKey || null, repeats: cand.repeats || [],
+    known_issues: (repo.entry && repo.entry.knownIssues) || [], known_noise: (repo.entry && repo.entry.knownNoise) || [],
     links: Object.assign({}, facts.links, link ? { kibana: link.url, kibana_resolved: link.resolvedUrl || null } : {}),
     kibana_filters: link ? { kql: link.kql, levels: link.levels, filters: link.filters } : null,
     thread_excerpt: thread.slice(0, 12).map(m => ({ ts: m.ts, user: m.user || m.botName || null, text: redact(unesc(m.text)).slice(0, 400) })),

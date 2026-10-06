@@ -51,6 +51,9 @@ test("context: a link the parser cannot read becomes a gap, never a crash", asyn
   const ctx = await buildContext(cfg, cand, [{ ts: "1790000800.000800", user: "UALERTBOT", text: "'REM - ERROR rate - QA'\nService name: zrt-admin-dashboard\n<" + bad + "|Kibana Discover Link>" }]);
   assert.equal(ctx.service_name, "zrt-admin-dashboard");
   assert.equal(ctx.window_utc.source, "fallback");
+  assert.deepEqual(ctx.repo_guess, [], "zrt-admin-dashboard is in the catalogue, no guess needed");
+  const { repoGuess } = await import("../scripts/context.mjs");
+  assert.deepEqual(repoGuess("remarketing-feedback", ["wkda"]), ["wkda/remarketing-feedback-service", "wkda/remarketing-feedback"]);
   assert.ok(ctx.gaps.some(g => /kibana link not resolved \(parse failed/.test(g)));
   assert.equal(lookupRepo("zrt-admin-dashboard", { services: { "zrt-admin-dashboard": { repo: "wkda/zrt-admin-dashboard-service" } } }, null).repo, "wkda/zrt-admin-dashboard-service");
 });

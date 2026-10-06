@@ -71,7 +71,8 @@
   "skip": {
     "olderThanHours": 48,
     "nonAlertMentions": true,
-    "alertCodes": []
+    "alertCodes": [],
+    "repeatWindowHours": 24
   },
   "knownNoise": [],
   "jira": {

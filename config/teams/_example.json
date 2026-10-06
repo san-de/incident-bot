@@ -71,7 +71,9 @@
   "skip": {
     "olderThanHours": 48,
     "nonAlertMentions": true,
-    "alertCodes": []
+    "alertCodes": [],
+    "repeatWindowHours": 24,
+    "_comment": "repeatWindowHours: the same alert title + service is analysed once per window (one candidate, repeats counted); 0 disables."
   },
   "knownNoise": [],
   "jira": {

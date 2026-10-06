@@ -61,6 +61,28 @@ test("github: frame parsing and log parsing; recent + frame on this repo's own h
   }
 });
 
+test("elastic key: the QA slot falls back to the PROD key, and the fallback is reported without the value", async () => {
+  const fs = await import("node:fs"); const os = await import("node:os"); const path = await import("node:path");
+  const { resolveElasticKey, describe } = await import("../scripts/lib/elastic-key.mjs");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ib-keys-")); const file = path.join(dir, "keys.json");
+  fs.writeFileSync(file, JSON.stringify({ ELASTIC_API_KEY_PROD: "prod-key-value-123456" }));
+  const saved = { FILE: process.env.ELASTIC_API_KEY_FILE, K: process.env.ELASTIC_API_KEY, Q: process.env.ELASTIC_API_KEY_QA, P: process.env.ELASTIC_API_KEY_PROD };
+  process.env.ELASTIC_API_KEY_FILE = file; delete process.env.ELASTIC_API_KEY; delete process.env.ELASTIC_API_KEY_QA; delete process.env.ELASTIC_API_KEY_PROD;
+  try {
+    const qa = resolveElasticKey("qa");
+    assert.equal(qa.key, "prod-key-value-123456"); assert.equal(qa.source, "file"); assert.equal(qa.slot, "ELASTIC_API_KEY_QA"); assert.equal(qa.fallback, "ELASTIC_API_KEY_PROD");
+    assert.equal(resolveElasticKey("prod").fallback, undefined);
+    const d = describe(qa); assert.equal(d.fallback, "ELASTIC_API_KEY_PROD"); assert.ok(!JSON.stringify(d).includes("prod-key-value"));
+    fs.writeFileSync(file, JSON.stringify({ ELASTIC_API_KEY_QA: "qa-key-value-1234567", ELASTIC_API_KEY_PROD: "prod-key-value-123456" }));
+    assert.equal(resolveElasticKey("qa").fallback, undefined, "own slot wins when present");
+    fs.writeFileSync(file, JSON.stringify({}));
+    assert.match(resolveElasticKey("qa").reason, /ELASTIC_API_KEY_QA \/ ELASTIC_API_KEY_PROD missing/);
+  } finally {
+    for (const [k, v] of [["ELASTIC_API_KEY_FILE", saved.FILE], ["ELASTIC_API_KEY", saved.K], ["ELASTIC_API_KEY_QA", saved.Q], ["ELASTIC_API_KEY_PROD", saved.P]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("redact removes key shapes, emails and VIN middles", async () => {
   const { redact } = await import("../scripts/lib/redact.mjs");
   const s = redact("xoxb-123456789012-abcdefghijkl ghp_abcdefghijklmnopqrstuvwxyz1234 mail a.b@auto1.com vin WAUZZZ8V5KA123456 Bearer abcdefghijklmnopqrstu password=hunter22");

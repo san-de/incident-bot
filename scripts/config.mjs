@@ -115,6 +115,8 @@ export function validate(team) {
   const k = cfg.kibana || {};
   req(["prod", "qa"].includes(k.env || "prod"), "kibana.env must be prod or qa");
   warn(!k.askTool || !k.askTool.startsWith("mcp__"), "kibana.askTool should be a tool-name suffix (ask_app_debugging), not a full mcp__ name");
+  const sk = cfg.skip || {};
+  req(sk.repeatWindowHours === undefined || (Number.isFinite(Number(sk.repeatWindowHours)) && Number(sk.repeatWindowHours) >= 0 && Number(sk.repeatWindowHours) <= 24 * 14), "skip.repeatWindowHours must be 0 (off) to 336");
   const g = cfg.github || {};
   warn(!g.lookbackHours || (g.lookbackHours >= 1 && g.lookbackHours <= 24 * 14), "github.lookbackHours should be between 1 and 336");
   const j = cfg.jira;

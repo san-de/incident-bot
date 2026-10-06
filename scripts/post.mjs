@@ -7,6 +7,7 @@
 //   node scripts/post.mjs check --team remex --channel C… [--thread-ts ts]        # exit 0 if that target is allowed, 6 otherwise
 //   node scripts/post.mjs mark  --team remex --ts <cand ts> --status posted --thread-ts <ts> --reply-ts <ts> [--team-ts <ts>] [--classification x]
 //                               [--ticket KEY --error-id <id> --service <name> --signature "<exception>"]   # these three feed jira.mjs local dedupe
+//                               [--alert-key "<candidate.alertKey>" --repeats <n>]                        # feeds the repeat suppression in match.mjs
 //
 // Allowed targets, and nothing else: the candidate's own thread in a configured source channel, output.teamChannelId,
 // output.dmUserIds. reply_broadcast is never allowed. A refused target is listed, never silently dropped.
@@ -67,6 +68,8 @@ function main() {
     if (opt["error-id"]) entry.errorId = opt["error-id"];
     if (opt.service) entry.service = opt.service;
     if (opt.signature) entry.signature = opt.signature;
+    if (opt["alert-key"]) entry.alertKey = opt["alert-key"];
+    if (opt.repeats) entry.repeats = Number(opt.repeats);
     if (opt.reason) entry.reason = opt.reason;
     return out(mark(cfg, opt.ts, entry));
   }

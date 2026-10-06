@@ -26,6 +26,19 @@ const SRE = /\[(SRE\d{4})\]/;
 
 export function unescape(t) { return String(t || "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"); }
 
+/**
+ * Alert key: what makes two tags "the same alert". SRE code or quoted title, plus the service named in the text.
+ * Used to analyse one service+title once per skip.repeatWindowHours and to group repeats inside a run.
+ */
+export function alertKeyOf(allText) {
+  const t = unescape(allText);
+  const code = (t.match(/\[(SRE\d{4})\]/) || [])[1];
+  const quoted = (t.match(/'([^'\n]{4,120})'/) || [])[1];
+  const title = (code || quoted || (t.split("\n").find(l => l.trim()) || "").replace(/<[^>]+>/g, "").trim().slice(0, 80)).toLowerCase();
+  const svc = (t.match(/Service name:\s*\*?([a-z0-9.-]+)/i) || t.match(/Detected for:\s*\*?([a-z0-9.-]+)/i) || t.match(/\|\s*([a-z0-9.-]+)\*?\s*$/m) || [])[1];
+  return `${title}::${(svc || "").toLowerCase()}`;
+}
+
 /** Pure function so tests can drive it without a state dir. */
 export function matchCandidates(cfg, ledger, input, nowSec = Date.now() / 1000) {
   const tokens = cfg.derived.matchTokens;
@@ -34,10 +47,19 @@ export function matchCandidates(cfg, ledger, input, nowSec = Date.now() / 1000) 
   const skip = cfg.skip || {};
   const staleH = skip.olderThanHours || 48;
   const maxPerRun = (cfg.poll || {}).maxPerRun || 5;
+  const repeatH = skip.repeatWindowHours === undefined ? 24 : Number(skip.repeatWindowHours);   // 0 disables the suppression
   const processed = ledger.processed || {}, replied = ledger.repliedThreads || {};
+  // alert keys already analysed (posted/team-only/dm/draft) inside the repeat window
+  const recentKeys = new Map();
+  if (repeatH > 0) for (const [ts, e] of Object.entries(processed)) {
+    if (!e.alertKey || !HANDLED.has(e.status) || e.status === "skipped") continue;
+    const at = e.processedAt ? Date.parse(e.processedAt) / 1000 : Number(ts);
+    if (nowSec - at <= repeatH * 3600) recentKeys.set(e.alertKey, { ts, ticket: e.ticket || null, status: e.status });
+  }
 
   const candidates = [], skipped = [];
   const seenThreads = new Set();
+  const seenKeys = new Map();   // alertKey → candidate (grouping inside this run)
   const hits = [...(input.hits || [])].sort((a, b) => Number(a.ts) - Number(b.ts));
   for (const h of hits) {
     const threadTs = h.threadTs || h.ts;
@@ -60,13 +82,25 @@ export function matchCandidates(cfg, ledger, input, nowSec = Date.now() / 1000) 
     const kibanaLinks = [...new Set((allText.match(/https?:\/\/kibana\.[^\s|>]+/g) || []))];
     if (skip.nonAlertMentions !== false && !codeM && !KIBANA.test(allText)) { skipped.push({ ts: h.ts, reason: "non-alert mention (no SRE code, no Kibana link)" }); continue; }
     if (codeM && (skip.alertCodes || []).includes(codeM[1])) { skipped.push({ ts: h.ts, reason: `alert code ${codeM[1]} excluded by config` }); continue; }
+    const alertKey = alertKeyOf(allText);
+    if (repeatH > 0) {
+      const prev = recentKeys.get(alertKey);
+      if (prev) { skipped.push({ ts: h.ts, reason: `same alert+service analysed ${prev.ticket ? prev.ticket + " " : ""}within ${repeatH} h (ts ${prev.ts})`, alertKey, repeatOf: prev.ts }); continue; }
+      const grouped = seenKeys.get(alertKey);
+      if (grouped) { grouped.repeats.push(h.ts); skipped.push({ ts: h.ts, reason: `grouped with ${grouped.ts} (same alert+service in this run)`, alertKey, repeatOf: grouped.ts }); continue; }
+    }
     seenThreads.add(threadTs);
-    candidates.push({ ts: h.ts, threadTs, channelId: h.channelId, permalink: h.permalink || null, tokens: found, alertCode: codeM ? codeM[1] : null,
-      kibanaLinks, tagger: h.user || null, ageMinutes: Math.round((nowSec - Number(h.ts)) / 60) });
+    const cand = { ts: h.ts, threadTs, channelId: h.channelId, permalink: h.permalink || null, tokens: found, alertCode: codeM ? codeM[1] : null,
+      kibanaLinks, tagger: h.user || null, ageMinutes: Math.round((nowSec - Number(h.ts)) / 60), alertKey, repeats: [] };
+    seenKeys.set(alertKey, cand);
+    candidates.push(cand);
   }
   const capped = candidates.slice(0, maxPerRun);
-  for (const c of candidates.slice(maxPerRun)) skipped.push({ ts: c.ts, reason: `deferred to next run (maxPerRun ${maxPerRun})`, deferred: true });
-  return { team: cfg.team, candidates: capped, skipped, watermarkTs: ledger.watermarkTs || null };
+  const deferred = candidates.slice(maxPerRun);
+  for (const c of deferred) skipped.push({ ts: c.ts, reason: `deferred to next run (maxPerRun ${maxPerRun})`, deferred: true, alertKey: c.alertKey });
+  return { team: cfg.team, candidates: capped, skipped, watermarkTs: ledger.watermarkTs || null,
+    deferredOldestTs: deferred.length ? deferred[0].ts : null, repeatWindowHours: repeatH,
+    watermarkAdvanceHint: deferred.length ? `advance to ${(Number(deferred[0].ts) - 0.000001).toFixed(6)} at most, so deferred candidates are found next run` : "advance to now − searchLagMinutes" };
 }
 
 function main() {

@@ -12,7 +12,7 @@ Read-only everywhere: never push, never open a PR, never modify a clone, never `
 Lookback = `github.lookbackHours` from the team config (default 48). The window you correlate is `[anchor − lookback, anchor]`, never the Slack window.
 
 ## Repo
-`context.repo`. If null, discover it: search the GitHub org(s) in `github.orgs` for `<service_name>` and `<service_name>-service` (GitHub MCP search when present, else skip). A discovered mapping goes back to the caller as `discovered_repo` so the poll appends it to the overlay; you never edit `config/services.json`.
+`context.repo`. If null, try `context.repo_guess` in order (the wkda convention `<service>-service`, then the bare name): confirm each with a GitHub MCP read (get repo / list commits) and take the first that exists; if none exists, search the org(s) in `github.orgs` for the service name. A confirmed mapping goes back to the caller as `discovered_repo` so the poll appends it to the overlay; you never edit `config/services.json` and never report a guess as confirmed.
 
 ## Steps
 Prefer the GitHub MCP read tools when the session has them (list commits on the default branch between two instants; list merged PRs with `merged:` range; get file contents at a ref). Otherwise:
