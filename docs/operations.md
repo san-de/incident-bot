@@ -41,6 +41,10 @@ agent1.prod.apps.auto1.team with `fetch('/api/…', {credentials:'include'})`.
 - Reading runs: an empty poll (clone, guard, Slack search, 0 candidates) takes about 40 s and $0.20 to $0.28, measured 2026-10-04. A run that stopped at the guard is about 25 s and $0.13, which is too close to tell apart by numbers alone: read the run result (`⛔ … could not start` vs `no new tags for <team>`). Candidates analysed: minutes and over $0.50.
 - Team channel: every handled alert produces one post; a `⛔ incident-bot <team>: run could not start` line means the guard stopped a run; a `🩺` line comes from the watchdog.
 
+## Volume on busy channels
+
+`skip.repeatWindowHours` (24 by default) makes the same alert title + service one candidate per window: repeats inside a run are grouped onto the first candidate (`repeats`), and alerts already analysed within the window are skipped with the earlier ts (and ticket) in the reason. `post.mjs mark --alert-key` is what feeds this; a mark without it does not suppress anything. Set it to 0 to disable. The watermark never passes a deferred candidate (`deferredOldestTs` in candidates.json).
+
 ## Pause, resume, run now
 
 ```
