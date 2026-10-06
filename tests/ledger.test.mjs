@@ -7,6 +7,30 @@ let env;
 before(() => { env = setup(); });
 after(() => env.teardown());
 
+test("ledger: export/import restores an empty volume and merges into an existing one", async () => {
+  const { resolve } = await import("../scripts/config.mjs");
+  const { init, mark, importLedger, mergeLedgers, load } = await import("../scripts/ledger.mjs");
+  const cfg = resolve("fixture");
+  init(cfg);
+  mark(cfg, "1790000100.000100", { status: "posted", threadTs: "1790000000.000001", threadReplyTs: "1790000900.000900", alertKey: "a::svc" });
+  const backup = JSON.parse(JSON.stringify(load(cfg)));
+  // simulate a recreated task: empty volume
+  fs.rmSync(cfg.ledgerPath);
+  init(cfg);
+  assert.equal(Object.keys(load(cfg).processed).length, 0);
+  const r = importLedger(cfg, backup);
+  assert.equal(r.mode, "merged");   // init created a fresh ledger first, so this is a merge
+  assert.equal(load(cfg).processed["1790000100.000100"].alertKey, "a::svc");
+  assert.equal(load(cfg).repliedThreads["1790000000.000001"], "1790000900.000900");
+  // merge rules: newer processedAt wins, later watermark wins, runs deduped by at
+  const a = { version: 2, team: "fixture", watermarkTs: "100.000000", processed: { x: { status: "dry-run", processedAt: "2026-10-01T00:00:00Z" } }, repliedThreads: {}, runs: [{ at: "2026-10-01T00:00:00Z" }] };
+  const b = { version: 2, team: "fixture", watermarkTs: "200.000000", processed: { x: { status: "posted", processedAt: "2026-10-02T00:00:00Z" }, y: { status: "skipped", processedAt: "2026-10-02T01:00:00Z" } }, repliedThreads: { t: "r" }, runs: [{ at: "2026-10-01T00:00:00Z" }, { at: "2026-10-02T00:00:00Z" }] };
+  const m = mergeLedgers(a, b);
+  assert.equal(m.processed.x.status, "posted"); assert.equal(m.watermarkTs, "200.000000"); assert.equal(m.runs.length, 2); assert.equal(m.repliedThreads.t, "r");
+  assert.throws(() => importLedger(cfg, { version: 2, team: "other", processed: {} }), /import refused/);
+  fs.rmSync(cfg.ledgerPath);
+});
+
 test("ledger: init, mark, advance forwards only, run-note", async () => {
   const { resolve } = await import("../scripts/config.mjs");
   const { init, mark, advance, runNote, load } = await import("../scripts/ledger.mjs");

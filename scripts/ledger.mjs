@@ -8,8 +8,12 @@
 //   node scripts/ledger.mjs mark        --team remex <ts> --json '{"status":"posted","threadTs":"…","threadReplyTs":"…"}'
 //   node scripts/ledger.mjs advance     --team remex <ts>       # forwards-only watermark move
 //   node scripts/ledger.mjs run-note    --team remex --json '{"candidates":3,"posted":2,"skipped":1,"failed":0,"durationSec":410,"gaps":""}'
+//   node scripts/ledger.mjs export      --team remex [--to /path/ledger-backup.json]   # copy for Drive / hand-over to a recreated task
+//   node scripts/ledger.mjs import      --team remex --file ledger-backup.json         # restore into an empty volume, or merge into an existing ledger
 //
 // Writes are atomic (tmp + rename). The ledger path comes from config.mjs (state dir outside the repo).
+// The volume belongs to the Agent1 task: it survives sessions and runs, not a deleted or recreated task. Hence export/import.
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs, out, fail, EXIT, nowIso, nowTs } from "./lib/cli.mjs";
@@ -55,6 +59,32 @@ export function advance(cfg, ts) {
   const moved = Number(ts) > Number(led.watermarkTs);
   if (moved) { led.watermarkTs = ts; led.updatedAt = nowIso(); writeAtomic(cfg.ledgerPath, led); }
   return { watermarkTs: led.watermarkTs, moved };
+}
+
+/** Merge another ledger into this one: union of processed and repliedThreads (newest processedAt wins), the later watermark, runs appended and deduped by `at`. */
+export function mergeLedgers(base, incoming) {
+  const out = JSON.parse(JSON.stringify(base));
+  for (const [ts, e] of Object.entries(incoming.processed || {})) {
+    const cur = out.processed[ts];
+    if (!cur || Date.parse(e.processedAt || 0) >= Date.parse(cur.processedAt || 0)) out.processed[ts] = e;
+  }
+  Object.assign(out.repliedThreads, incoming.repliedThreads || {});
+  if (Number(incoming.watermarkTs || 0) > Number(out.watermarkTs || 0)) out.watermarkTs = incoming.watermarkTs;
+  const seen = new Set((out.runs || []).map(r => r.at));
+  for (const r of incoming.runs || []) if (!seen.has(r.at)) { out.runs.push(r); seen.add(r.at); }
+  out.runs.sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  if (out.runs.length > 50) out.runs = out.runs.slice(-50);
+  out.updatedAt = nowIso();
+  return out;
+}
+
+/** Restore or merge from an exported ledger file (a Drive backup, or the previous task's ledger when a task is recreated). */
+export function importLedger(cfg, incoming) {
+  if (!incoming || incoming.version !== 2 || incoming.team !== cfg.team) throw new Error(`import refused: expected a v2 ledger for team ${cfg.team}`);
+  const cur = load(cfg);
+  const merged = cur ? mergeLedgers(cur, incoming) : Object.assign({}, incoming, { updatedAt: nowIso(), restoredAt: nowIso() });
+  writeAtomic(cfg.ledgerPath, merged);
+  return { path: cfg.ledgerPath, mode: cur ? "merged" : "restored", processed: Object.keys(merged.processed).length, watermarkTs: merged.watermarkTs, runs: merged.runs.length };
 }
 
 export function runNote(cfg, note) {
@@ -103,7 +133,17 @@ function main() {
       return out(advance(cfg, pos[0]));
     }
     case "run-note": return out(runNote(cfg, json()));
-    default: fail("ledger", "usage: ledger.mjs init|status|has <ts>|has-thread <thread_ts>|mark <ts> --json|advance <ts>|run-note --json  --team <team>", EXIT.USAGE);
+    case "export": {
+      const led = mustLoad(cfg);
+      const dest = opt.to || path.join(cfg.teamStateDir, `ledger-backup-${new Date().toISOString().slice(0, 10)}.json`);
+      writeAtomic(dest, Object.assign({}, led, { exportedAt: nowIso(), exportedFrom: cfg.ledgerPath }));
+      return out({ exported: dest, processed: Object.keys(led.processed).length, watermarkTs: led.watermarkTs, runs: led.runs.length });
+    }
+    case "import": {
+      if (!opt.file) fail("ledger import", "--file <exported ledger json> required", EXIT.USAGE);
+      try { return out(importLedger(cfg, JSON.parse(fs.readFileSync(opt.file, "utf8")))); } catch (e) { fail("ledger import", e.message, EXIT.USAGE); }
+    }
+    default: fail("ledger", "usage: ledger.mjs init|status|has <ts>|has-thread <thread_ts>|mark <ts> --json|advance <ts>|run-note --json|export [--to file]|import --file <json>  --team <team>", EXIT.USAGE);
   }
 }
 

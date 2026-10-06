@@ -47,6 +47,10 @@ agent1.prod.apps.auto1.team with `fetch('/api/…', {credentials:'include'})`.
 
 `skip.repeatWindowHours` (24 by default) makes the same alert title + service one candidate per window: repeats inside a run are grouped onto the first candidate (`repeats`), and alerts already analysed within the window are skipped with the earlier ts (and ticket) in the reason. `post.mjs mark --alert-key` is what feeds this; a mark without it does not suppress anything. Set it to 0 to disable. The watermark never passes a deferred candidate (`deferredOldestTs` in candidates.json).
 
+## Ledger durability
+
+The ledger lives on the task's `/app/task-context` volume: it survives sessions, hibernation, worker restarts and every scheduled run. It does **not** survive deleting the task or creating a new one (a new task gets a new volume). Therefore: change a task in place (`PATCH /api/tasks/:id` description/projects) rather than recreating it; before you must recreate (service account, owner change), run `node incident-bot/scripts/ledger.mjs export --team <team>` in a session of the old task and `ledger.mjs import --file …` in the first session of the new one. The poll also keeps a best-effort daily copy in the owner's Agent1 Drive at `incident-bot/<team>/ledger.json` and restores from it when it finds an empty volume. If everything is lost: the signature line in each thread still prevents double replies, the Jira dedupe layers 2 and 3 do not depend on the ledger, and a fresh ledger looks back only `poll.firstRunLookbackHours`.
+
 ## Pause, resume, run now
 
 ```
