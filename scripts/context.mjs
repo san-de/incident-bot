@@ -77,7 +77,9 @@ export async function buildContext(cfg, cand, thread, opts = {}) {
 
   let link = null, window = null;
   for (const u of ordered) {
-    const r = opts.resolver ? await opts.resolver(u, msgIso, env) : await resolveAny(u, msgIso, env);
+    let r;
+    try { r = opts.resolver ? await opts.resolver(u, msgIso, env) : await resolveAny(u, msgIso, env); }
+    catch (e) { r = { error: `parse failed: ${String(e.message || e).slice(0, 80)}` }; }   // a malformed rison fragment must never abort the context
     if (r && !r.error) { link = Object.assign({ url: unslack(u) }, r); if (r.from && r.to) window = { from: r.from, to: r.to, source: `link:${r.shape}` }; break; }
     if (r && r.error) gaps.push(`kibana link not resolved (${r.error})`);
   }

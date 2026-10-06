@@ -40,6 +40,21 @@ test("context: QA-style alert yields service from 'Service name:' and a quoted t
   assert.match(f.links.kibana, /kibana\.qa\./);
 });
 
+test("context: a link the parser cannot read becomes a gap, never a crash", async () => {
+  const { resolve } = await import("../scripts/config.mjs");
+  const { buildContext, lookupRepo } = await import("../scripts/context.mjs");
+  const { parseDiscover } = await import("../scripts/links.mjs");
+  const cfg = resolve("fixture");
+  const bad = "https://kibana.qa.services.auto1.team/app/discover#/?_g=(time:(from:'2026-10-06T10:00:00.000Z',to:'2026-10-06T10:30:00.000Z'))&_a=(filters:!((meta:(key:service.name,params:(query:zrt-admin-dashboard),type:phrase),query:(match_phrase:(service.name:zrt-admin-dashboard))))";
+  assert.throws(() => parseDiscover(bad), /expected/);
+  const cand = { ts: "1790000800.000800", threadTs: "1790000800.000800", channelId: "C0FIXTURE1", alertCode: null, kibanaLinks: [bad] };
+  const ctx = await buildContext(cfg, cand, [{ ts: "1790000800.000800", user: "UALERTBOT", text: "'REM - ERROR rate - QA'\nService name: zrt-admin-dashboard\n<" + bad + "|Kibana Discover Link>" }]);
+  assert.equal(ctx.service_name, "zrt-admin-dashboard");
+  assert.equal(ctx.window_utc.source, "fallback");
+  assert.ok(ctx.gaps.some(g => /kibana link not resolved \(parse failed/.test(g)));
+  assert.equal(lookupRepo("zrt-admin-dashboard", { services: { "zrt-admin-dashboard": { repo: "wkda/zrt-admin-dashboard-service" } } }, null).repo, "wkda/zrt-admin-dashboard-service");
+});
+
 test("context: fallback window when no link resolves, capped at maxWindowHours", async () => {
   const { resolve } = await import("../scripts/config.mjs");
   const { buildContext } = await import("../scripts/context.mjs");
