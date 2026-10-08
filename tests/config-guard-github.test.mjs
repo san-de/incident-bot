@@ -75,8 +75,12 @@ test("elastic key: the QA slot falls back to the PROD key, and the fallback is r
     const d = describe(qa); assert.equal(d.fallback, "ELASTIC_API_KEY_PROD"); assert.ok(!JSON.stringify(d).includes("prod-key-value"));
     fs.writeFileSync(file, JSON.stringify({ ELASTIC_API_KEY_QA: "qa-key-value-1234567", ELASTIC_API_KEY_PROD: "prod-key-value-123456" }));
     assert.equal(resolveElasticKey("qa").fallback, undefined, "own slot wins when present");
+    fs.writeFileSync(file, JSON.stringify({ ELASTIC_API_KEY: "generic-key-value-1234" }));
+    const g = resolveElasticKey("qa");
+    assert.equal(g.key, "generic-key-value-1234"); assert.equal(g.fallback, "ELASTIC_API_KEY");
+    assert.equal(resolveElasticKey("prod").fallback, "ELASTIC_API_KEY");
     fs.writeFileSync(file, JSON.stringify({}));
-    assert.match(resolveElasticKey("qa").reason, /ELASTIC_API_KEY_QA \/ ELASTIC_API_KEY_PROD missing/);
+    assert.match(resolveElasticKey("qa").reason, /ELASTIC_API_KEY_QA \/ ELASTIC_API_KEY_PROD \/ ELASTIC_API_KEY missing/);
   } finally {
     for (const [k, v] of [["ELASTIC_API_KEY_FILE", saved.FILE], ["ELASTIC_API_KEY", saved.K], ["ELASTIC_API_KEY_QA", saved.Q], ["ELASTIC_API_KEY_PROD", saved.P]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
     fs.rmSync(dir, { recursive: true, force: true });

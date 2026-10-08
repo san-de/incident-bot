@@ -34,6 +34,9 @@ export function resolveElasticKey(env) {
   const file = keysFile();
   const chain = [slot];
   if (/_QA$/.test(slot)) chain.push(slot.replace(/_QA$/, "_PROD"));
+  // last resort: the generic slot name. Agent1 Integrations can store the single Elastic key as ELASTIC_API_KEY in the keys
+  // file; without this a QA lookup reports ELASTIC_API_KEY_QA missing although the same key is there under the generic name.
+  chain.push("ELASTIC_API_KEY");
   if (usable(process.env.ELASTIC_API_KEY)) return { key: process.env.ELASTIC_API_KEY, source: "env", slot, file };
   for (const s of chain) if (usable(process.env[s])) return { key: process.env[s], source: "env", slot, file, fallback: s !== slot ? s : undefined };
   let json = null, why = null;
